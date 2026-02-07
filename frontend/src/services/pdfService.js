@@ -1,51 +1,72 @@
-// // import { api } from './authService';
+// // // import { api } from './authService';
 
-// // // PDF Service
-// // const pdfService = {
-// //   // Upload PDF for summarization
-// //   uploadPDF: async (file, onUploadProgress) => {
-// //     try {
-// //       const formData = new FormData();
-// //       formData.append('pdf', file);
+// // // // PDF Service
+// // // const pdfService = {
+// // //   // Upload PDF for summarization
+// // //   uploadPDF: async (file, onUploadProgress) => {
+// // //     try {
+// // //       const formData = new FormData();
+// // //       formData.append('pdf', file);
 
-// //       const response = await api.post('/api/pdf/upload', formData, {
-// //         headers: {
-// //           'Content-Type': 'multipart/form-data'
-// //         },
-// //         onUploadProgress: onUploadProgress
-// //       });
-// //       return { success: true, data: response.data };
-// //     } catch (error) {
-// //       const message = error.response?.data?.message || 
-// //                       error.response?.data?.error || 
-// //                       'Failed to upload and summarize PDF.';
-// //       return { success: false, error: message };
-// //     }
-// //   },
+// // //       const response = await api.post('/api/pdf/upload', formData, {
+// // //         headers: {
+// // //           'Content-Type': 'multipart/form-data'
+// // //         },
+// // //         onUploadProgress: onUploadProgress
+// // //       });
+// // //       return { success: true, data: response.data };
+// // //     } catch (error) {
+// // //       const message = error.response?.data?.message || 
+// // //                       error.response?.data?.error || 
+// // //                       'Failed to upload and summarize PDF.';
+// // //       return { success: false, error: message };
+// // //     }
+// // //   },
 
-// //   // Get a specific summary by ID
-// //   getSummary: async (id) => {
-// //     try {
-// //       const response = await api.get(`/api/pdf/summary/${id}`);
-// //       return { success: true, data: response.data };
-// //     } catch (error) {
-// //       const message = error.response?.data?.message || 
-// //                       error.response?.data?.error || 
-// //                       'Failed to fetch summary.';
-// //       return { success: false, error: message };
-// //     }
-// //   }
+// // //   // Get a specific summary by ID
+// // //   getSummary: async (id) => {
+// // //     try {
+// // //       const response = await api.get(`/api/pdf/summary/${id}`);
+// // //       return { success: true, data: response.data };
+// // //     } catch (error) {
+// // //       const message = error.response?.data?.message || 
+// // //                       error.response?.data?.error || 
+// // //                       'Failed to fetch summary.';
+// // //       return { success: false, error: message };
+// // //     }
+// // //   }
+// // // };
+
+// // // export default pdfService;
+
+// // import axios from 'axios';
+
+// // const API = axios.create({ baseURL: 'http://localhost:5000/api' });
+
+// // API.interceptors.request.use((config) => {
+// //   const token = localStorage.getItem('token');
+// //   if (token) config.headers.Authorization = `Bearer ${token}`;
+// //   return config;
+// // });
+
+// // export const uploadPDF = (file) => {
+// //   const formData = new FormData();
+// //   formData.append('pdf', file);
+// //   return API.post('/pdf/upload', formData, {
+// //     headers: { 'Content-Type': 'multipart/form-data' }
+// //   });
 // // };
-
-// // export default pdfService;
-
 // import axios from 'axios';
 
-// const API = axios.create({ baseURL: 'http://localhost:5000/api' });
+// const API = axios.create({
+//   baseURL: 'http://localhost:5000/api'
+// });
 
 // API.interceptors.request.use((config) => {
 //   const token = localStorage.getItem('token');
-//   if (token) config.headers.Authorization = `Bearer ${token}`;
+//   if (token) {
+//     config.headers.Authorization = `Bearer ${token}`;
+//   }
 //   return config;
 // });
 
@@ -56,6 +77,7 @@
 //     headers: { 'Content-Type': 'multipart/form-data' }
 //   });
 // };
+
 import axios from 'axios';
 
 const API = axios.create({
@@ -64,16 +86,21 @@ const API = axios.create({
 
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
+
+  // 🔴 ADD THIS LINE
+  console.log("TOKEN BEING SENT:", token);
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-export const uploadPDF = (file) => {
+
+export const uploadPDF = async (file) => {
   const formData = new FormData();
   formData.append('pdf', file);
-  return API.post('/pdf/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+
+  const response = await API.post('/pdf/upload', formData);
+  return response.data;
 };

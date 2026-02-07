@@ -611,7 +611,7 @@ function Register() {
               <label>Full name</label>
               <input
                 type="text"
-                placeholder="John Doe"
+                placeholder="Your name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={loading}
@@ -622,7 +622,7 @@ function Register() {
               <label>Email</label>
               <input
                 type="email"
-                placeholder="you@example.com"
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
@@ -633,7 +633,7 @@ function Register() {
               <label>Password</label>
               <input
                 type="password"
-                placeholder="Min. 6 characters"
+                // placeholder=""
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}

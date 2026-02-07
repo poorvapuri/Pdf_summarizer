@@ -1,0 +1,5 @@
+nltk
+pytesseract
+pdf2image
+slate3k
+pillow

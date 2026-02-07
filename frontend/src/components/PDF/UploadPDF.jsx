@@ -798,7 +798,7 @@ function UploadPDF() {
 
     try {
       const response = await uploadPDF(file);
-      setSummary(response.data.summary);
+      setSummary(response.summary);
     } catch (err) {
       setError(err.response?.data?.message || 'Upload failed');
     } finally {
