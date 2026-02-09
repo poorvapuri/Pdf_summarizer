@@ -769,6 +769,8 @@ function UploadPDF() {
   const [error, setError] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef(null);
+  const [summaryType, setSummaryType] = useState("medium");
+
 
   const handleFile = (selectedFile) => {
     setError('');
@@ -797,7 +799,7 @@ function UploadPDF() {
     setError('');
 
     try {
-      const response = await uploadPDF(file);
+      const response = await uploadPDF(file, summaryType);
       setSummary(response.summary);
     } catch (err) {
       setError(err.response?.data?.message || 'Upload failed');
@@ -882,6 +884,21 @@ function UploadPDF() {
               </>
             )}
           </div>
+
+          <div className="summary-type" style={{ textAlign: "center", marginBottom: "16px" }}>
+  <label style={{ marginRight: "8px", fontWeight: "500" }}>
+    Summary Type:
+  </label>
+  <select
+    value={summaryType}
+    onChange={(e) => setSummaryType(e.target.value)}
+  >
+    <option value="short">Short (5–6 lines)</option>
+    <option value="medium">Medium (1–2 paragraphs)</option>
+    <option value="detailed">Detailed (section-wise)</option>
+  </select>
+</div>
+
 
           <div className="upload-btn" style={{ textAlign: 'center' }}>
             <button onClick={handleUpload} disabled={!file || loading}>

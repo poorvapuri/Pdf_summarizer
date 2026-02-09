@@ -352,7 +352,7 @@ const SCRIPT_PATH = path.resolve(
   "../../ai_service/pdf_summarizer.py"
 );
 
-module.exports = (filePath, mode = "text") =>
+module.exports = (filePath, mode = "medium") =>
   new Promise((resolve, reject) => {
     const py = spawn(PYTHON_PATH, [SCRIPT_PATH, filePath, mode]);
 

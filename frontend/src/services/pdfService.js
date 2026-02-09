@@ -97,9 +97,10 @@ API.interceptors.request.use((config) => {
 });
 
 
-export const uploadPDF = async (file) => {
+export const uploadPDF = async (file, summaryType) => {
   const formData = new FormData();
   formData.append('pdf', file);
+  formData.append("summaryType", summaryType);
 
   const response = await API.post('/pdf/upload', formData);
   return response.data;

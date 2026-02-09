@@ -61,7 +61,11 @@ exports.uploadAndSummarize = async (req, res) => {
       return res.status(400).json({ message: "No PDF uploaded" });
     }
 
-    const result = await runSummarizer(req.file.path, "text");
+    // const result = await runSummarizer(req.file.path, "text");
+
+    const summaryType = req.body.summaryType || "medium";
+const result = await runSummarizer(req.file.path, summaryType);
+
 
     const record = await Summary.create({
       userId: req.userId,
