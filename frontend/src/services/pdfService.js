@@ -78,16 +78,47 @@
 //   });
 // };
 
+// import axios from 'axios';
+
+// const API = axios.create({
+//   baseURL: 'http://localhost:5001/api'
+// });
+
+// API.interceptors.request.use((config) => {
+//   const token = localStorage.getItem('token');
+
+//   // 🔴 ADD THIS LINE
+//   console.log("TOKEN BEING SENT:", token);
+
+//   if (token) {
+//     config.headers.Authorization = `Bearer ${token}`;
+//   }
+//   return config;
+// });
+
+
+// export const uploadPDF = async (file, summaryType) => {
+//   const formData = new FormData();
+//   formData.append('pdf', file);
+//   formData.append("summaryType", summaryType);
+
+//   const response = await API.post('/pdf/upload', formData);
+//   return response.data;
+// };
+
+
+
+
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api'
+  baseURL: 'http://localhost:5001/api'
 });
 
+// Attach JWT token automatically
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
 
-  // 🔴 ADD THIS LINE
   console.log("TOKEN BEING SENT:", token);
 
   if (token) {
@@ -96,11 +127,28 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
-
-export const uploadPDF = async (file, summaryType) => {
+/**
+ * Upload PDF for summarization
+ * @param {File} file
+ * @param {string} summaryType - short | medium | detailed
+ * @param {number|null} startPage
+ * @param {number|null} endPage
+ */
+export const uploadPDF = async (
+  file,
+  summaryType,
+  startPage = null,
+  endPage = null
+) => {
   const formData = new FormData();
   formData.append('pdf', file);
-  formData.append("summaryType", summaryType);
+  formData.append('summaryType', summaryType);
+
+  // 🔹 NEW: Optional page range
+  if (startPage !== null && endPage !== null) {
+    formData.append('startPage', startPage);
+    formData.append('endPage', endPage);
+  }
 
   const response = await API.post('/pdf/upload', formData);
   return response.data;

@@ -811,6 +811,257 @@
 
 
 
+# import sys
+# import json
+# import re
+# import logging
+# from pathlib import Path
+
+# import pytesseract
+# import slate3k as slate
+# from pdf2image import convert_from_path
+# from nltk.corpus import stopwords
+# from nltk.tokenize import word_tokenize, sent_tokenize
+# from nltk.stem.snowball import SnowballStemmer
+
+# logging.getLogger("pdfminer").setLevel(logging.ERROR)
+
+# # ─── CONFIGURATION ────────────────────────────────────────────────────
+# POPPLER_PATH = r"C:\poppler-25.12.0\Library\bin"
+
+# MIN_SENTENCE_WORDS = 6
+# MAX_SENTENCE_WORDS = 60
+# CHUNK_SIZE = 7
+
+# STOP = set(stopwords.words("english"))
+# STEMMER = SnowballStemmer("english")
+
+# # 🔹 SUMMARY MODES (NEW)
+# SUMMARY_PROFILES = {
+#     "short": {
+#         "summary_ratio": 0.1,      # ~5–6 lines
+#         "sentences_per_chunk": 1,
+#         "min_sentences": 3,
+#         "max_sentences": 6,
+#     },
+#     "medium": {
+#         "summary_ratio": 0.25,     # 1–2 paragraphs
+#         "sentences_per_chunk": 1,
+#         "min_sentences": 6,
+#         "max_sentences": 15,
+#     },
+#     "detailed": {
+#         "summary_ratio": 0.45,     # section/coverage-wise
+#         "sentences_per_chunk": 2,
+#         "min_sentences": 12,
+#         "max_sentences": 40,
+#     },
+# }
+
+
+# # ─── TEXT EXTRACTION ──────────────────────────────────────────────────
+# def extract_text_pdf(path: str) -> str:
+#     try:
+#         with open(path, "rb") as f:
+#             return " ".join(slate.PDF(f))
+#     except Exception:
+#         return ""
+
+
+# def extract_text_ocr(path: str) -> str:
+#     try:
+#         pages = convert_from_path(path, poppler_path=POPPLER_PATH)
+#         return " ".join(pytesseract.image_to_string(p) for p in pages)
+#     except Exception:
+#         return ""
+
+
+# def extract_text(path: str) -> str:
+#     text = extract_text_pdf(path)
+#     if len(text.strip()) < 50:
+#         text = extract_text_ocr(path)
+#     return text
+
+
+# # ─── TEXT CLEANING ────────────────────────────────────────────────────
+# def clean_text(text: str) -> str:
+#     text = re.sub(r"https?://\S+|www\.\S+|\S+\.html?\b", "", text)
+#     text = re.sub(r"\S+@\S+\.\S+", "", text)
+#     text = re.sub(r"\[\s*\d+(?:\s*[,\-–]\s*\d+)*\s*\]", "", text)
+#     text = re.sub(r"(?i)(figure|fig|table|chart)\s*\.?\s*\d+\s*[:.]?", "", text)
+#     text = re.sub(r"\b(?:[a-zA-Z]\s+){3,}[a-zA-Z]\b", "", text)
+
+#     lines = []
+#     for line in text.split("\n"):
+#         if not line.strip():
+#             continue
+#         digit_ratio = sum(c.isdigit() for c in line) / max(len(line), 1)
+#         alpha_ratio = sum(c.isalpha() for c in line) / max(len(line), 1)
+#         if digit_ratio < 0.25 and alpha_ratio > 0.4:
+#             lines.append(line.strip())
+
+#     text = " ".join(lines)
+#     text = re.sub(r"\s+", " ", text).strip()
+#     return text
+
+
+# # ─── SENTENCE FILTERING ──────────────────────────────────────────────
+# def is_valid_sentence(sentence: str) -> bool:
+#     words = word_tokenize(sentence)
+#     alpha_words = [w for w in words if w.isalpha()]
+
+#     if not (MIN_SENTENCE_WORDS <= len(alpha_words) <= MAX_SENTENCE_WORDS):
+#         return False
+#     if sentence.isupper():
+#         return False
+#     if re.match(r"^\s*(\d+[\.\):]|[•\-–—]|[a-zA-Z][\.\)])\s*$", sentence):
+#         return False
+
+#     special = sum(not c.isalnum() and not c.isspace() for c in sentence)
+#     if special / max(len(sentence), 1) > 0.3:
+#         return False
+
+#     return True
+
+
+# # ─── SCORING ──────────────────────────────────────────────────────────
+# def build_word_frequencies(text: str) -> dict:
+#     freq = {}
+#     for w in word_tokenize(text.lower()):
+#         if w.isalpha() and w not in STOP and len(w) > 2:
+#             sw = STEMMER.stem(w)
+#             freq[sw] = freq.get(sw, 0) + 1
+
+#     if freq:
+#         max_freq = max(freq.values())
+#         freq = {k: v / max_freq for k, v in freq.items()}
+
+#     return freq
+
+
+# def score_sentence(sentence: str, freq: dict, position: float) -> float:
+#     words = word_tokenize(sentence.lower())
+#     content = [
+#         STEMMER.stem(w) for w in words
+#         if w.isalpha() and w not in STOP and len(w) > 2
+#     ]
+
+#     if len(content) < 4:
+#         return 0.0
+
+#     freq_score = sum(freq.get(w, 0) for w in content) / len(content)
+
+#     if position < 0.1:
+#         position_score = 1.2
+#     elif position < 0.2:
+#         position_score = 1.1
+#     elif position > 0.85:
+#         position_score = 1.15
+#     else:
+#         position_score = 1.0
+
+#     ideal_len = 20
+#     length_penalty = 1.0 - 0.3 * abs(len(words) - ideal_len) / ideal_len
+#     length_penalty = max(length_penalty, 0.5)
+
+#     return freq_score * position_score * length_penalty
+
+
+# # ─── SUMMARIZATION ────────────────────────────────────────────────────
+# def summarize(text: str, mode: str = "medium") -> str:
+#     profile = SUMMARY_PROFILES.get(mode, SUMMARY_PROFILES["medium"])
+
+#     summary_ratio = profile["summary_ratio"]
+#     sentences_per_chunk = profile["sentences_per_chunk"]
+#     min_sent = profile["min_sentences"]
+#     max_sent = profile["max_sentences"]
+
+#     text = clean_text(text)
+#     sentences = sent_tokenize(text)
+
+#     indexed = [
+#         (i, s) for i, s in enumerate(sentences)
+#         if is_valid_sentence(s)
+#     ]
+
+#     if len(indexed) < 3:
+#         return "Not enough readable content to generate a summary."
+
+#     freq = build_word_frequencies(text)
+
+#     target = max(
+#         min_sent,
+#         min(max_sent, int(len(indexed) * summary_ratio))
+#     )
+
+#     adaptive_chunk = max(3, len(indexed) // target)
+
+#     scored = []
+#     total = len(sentences)
+
+#     for idx, sent in indexed:
+#         pos = idx / max(total, 1)
+#         score = score_sentence(sent, freq, pos)
+#         scored.append((idx, sent, score))
+
+#     selected = []
+#     seen = set()
+
+#     for i in range(0, len(scored), adaptive_chunk):
+#         chunk = scored[i:i + adaptive_chunk]
+#         chunk = sorted(chunk, key=lambda x: x[2], reverse=True)
+#         picks = chunk[:sentences_per_chunk]
+
+#         for idx, sent, score in picks:
+#             key = sent.lower().strip()
+#             if score > 0 and key not in seen:
+#                 seen.add(key)
+#                 selected.append((idx, sent))
+
+#     selected.sort(key=lambda x: x[0])
+
+#     summary = " ".join(s for _, s in selected)
+#     summary = re.sub(r"\s+", " ", summary)
+#     summary = re.sub(r"\s([.,!?;:])", r"\1", summary)
+
+#     return summary.strip()
+
+
+# # ─── ENTRY POINT ──────────────────────────────────────────────────────
+# def main():
+#     if len(sys.argv) < 2:
+#         print(json.dumps({"error": "No file path provided"}), flush=True)
+#         sys.exit(1)
+
+#     file_path = sys.argv[1]
+#     mode = sys.argv[2] if len(sys.argv) > 2 else "medium"
+
+#     if not Path(file_path).is_file():
+#         print(json.dumps({"error": "File not found"}), flush=True)
+#         sys.exit(1)
+
+#     text = extract_text(file_path)
+#     if not text.strip():
+#         print(json.dumps({"error": "Could not extract text"}), flush=True)
+#         sys.exit(1)
+
+#     summary = summarize(text, mode)
+
+#     print(json.dumps({
+#         "summary_type": mode,
+#         "summary": summary,
+#         "stats": {
+#             "original_words": len(text.split()),
+#             "summary_words": len(summary.split())
+#         }
+#     }), flush=True)
+
+
+# if __name__ == "__main__":
+#     main()
+
+
+
 import sys
 import json
 import re
@@ -827,37 +1078,34 @@ from nltk.stem.snowball import SnowballStemmer
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
 # ─── CONFIGURATION ────────────────────────────────────────────────────
-POPPLER_PATH = r"C:\poppler-25.12.0\Library\bin"
+POPPLER_PATH = None  # ✅ macOS uses system poppler
 
 MIN_SENTENCE_WORDS = 6
 MAX_SENTENCE_WORDS = 60
-CHUNK_SIZE = 7
 
 STOP = set(stopwords.words("english"))
 STEMMER = SnowballStemmer("english")
 
-# 🔹 SUMMARY MODES (NEW)
 SUMMARY_PROFILES = {
     "short": {
-        "summary_ratio": 0.1,      # ~5–6 lines
+        "summary_ratio": 0.1,
         "sentences_per_chunk": 1,
         "min_sentences": 3,
         "max_sentences": 6,
     },
     "medium": {
-        "summary_ratio": 0.25,     # 1–2 paragraphs
+        "summary_ratio": 0.25,
         "sentences_per_chunk": 1,
         "min_sentences": 6,
         "max_sentences": 15,
     },
     "detailed": {
-        "summary_ratio": 0.45,     # section/coverage-wise
+        "summary_ratio": 0.45,
         "sentences_per_chunk": 2,
         "min_sentences": 12,
         "max_sentences": 40,
     },
 }
-
 
 # ─── TEXT EXTRACTION ──────────────────────────────────────────────────
 def extract_text_pdf(path: str) -> str:
@@ -868,39 +1116,35 @@ def extract_text_pdf(path: str) -> str:
         return ""
 
 
-def extract_text_ocr(path: str) -> str:
+def extract_text_ocr(path: str, start_page=None, end_page=None) -> str:
     try:
-        pages = convert_from_path(path, poppler_path=POPPLER_PATH)
+        pages = convert_from_path(
+            path,
+            first_page=start_page,
+            last_page=end_page
+        )
         return " ".join(pytesseract.image_to_string(p) for p in pages)
     except Exception:
         return ""
 
 
-def extract_text(path: str) -> str:
+def extract_text(path: str, start_page=None, end_page=None) -> str:
     text = extract_text_pdf(path)
-    if len(text.strip()) < 50:
-        text = extract_text_ocr(path)
+
+    # If page range is provided or text is weak → OCR
+    if start_page or end_page or len(text.strip()) < 50:
+        text = extract_text_ocr(path, start_page, end_page)
+
     return text
 
 
 # ─── TEXT CLEANING ────────────────────────────────────────────────────
 def clean_text(text: str) -> str:
-    text = re.sub(r"https?://\S+|www\.\S+|\S+\.html?\b", "", text)
+    text = re.sub(r"https?://\S+|www\.\S+", "", text)
     text = re.sub(r"\S+@\S+\.\S+", "", text)
     text = re.sub(r"\[\s*\d+(?:\s*[,\-–]\s*\d+)*\s*\]", "", text)
-    text = re.sub(r"(?i)(figure|fig|table|chart)\s*\.?\s*\d+\s*[:.]?", "", text)
-    text = re.sub(r"\b(?:[a-zA-Z]\s+){3,}[a-zA-Z]\b", "", text)
+    text = re.sub(r"(?i)(figure|fig|table|chart)\s*\d*", "", text)
 
-    lines = []
-    for line in text.split("\n"):
-        if not line.strip():
-            continue
-        digit_ratio = sum(c.isdigit() for c in line) / max(len(line), 1)
-        alpha_ratio = sum(c.isalpha() for c in line) / max(len(line), 1)
-        if digit_ratio < 0.25 and alpha_ratio > 0.4:
-            lines.append(line.strip())
-
-    text = " ".join(lines)
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
@@ -909,151 +1153,80 @@ def clean_text(text: str) -> str:
 def is_valid_sentence(sentence: str) -> bool:
     words = word_tokenize(sentence)
     alpha_words = [w for w in words if w.isalpha()]
-
-    if not (MIN_SENTENCE_WORDS <= len(alpha_words) <= MAX_SENTENCE_WORDS):
-        return False
-    if sentence.isupper():
-        return False
-    if re.match(r"^\s*(\d+[\.\):]|[•\-–—]|[a-zA-Z][\.\)])\s*$", sentence):
-        return False
-
-    special = sum(not c.isalnum() and not c.isspace() for c in sentence)
-    if special / max(len(sentence), 1) > 0.3:
-        return False
-
-    return True
+    return MIN_SENTENCE_WORDS <= len(alpha_words) <= MAX_SENTENCE_WORDS
 
 
 # ─── SCORING ──────────────────────────────────────────────────────────
 def build_word_frequencies(text: str) -> dict:
     freq = {}
     for w in word_tokenize(text.lower()):
-        if w.isalpha() and w not in STOP and len(w) > 2:
+        if w.isalpha() and w not in STOP:
             sw = STEMMER.stem(w)
             freq[sw] = freq.get(sw, 0) + 1
 
-    if freq:
-        max_freq = max(freq.values())
-        freq = {k: v / max_freq for k, v in freq.items()}
-
-    return freq
+    max_freq = max(freq.values(), default=1)
+    return {k: v / max_freq for k, v in freq.items()}
 
 
-def score_sentence(sentence: str, freq: dict, position: float) -> float:
-    words = word_tokenize(sentence.lower())
-    content = [
-        STEMMER.stem(w) for w in words
-        if w.isalpha() and w not in STOP and len(w) > 2
+def score_sentence(sentence: str, freq: dict) -> float:
+    words = [
+        STEMMER.stem(w) for w in word_tokenize(sentence.lower())
+        if w.isalpha() and w not in STOP
     ]
-
-    if len(content) < 4:
-        return 0.0
-
-    freq_score = sum(freq.get(w, 0) for w in content) / len(content)
-
-    if position < 0.1:
-        position_score = 1.2
-    elif position < 0.2:
-        position_score = 1.1
-    elif position > 0.85:
-        position_score = 1.15
-    else:
-        position_score = 1.0
-
-    ideal_len = 20
-    length_penalty = 1.0 - 0.3 * abs(len(words) - ideal_len) / ideal_len
-    length_penalty = max(length_penalty, 0.5)
-
-    return freq_score * position_score * length_penalty
+    return sum(freq.get(w, 0) for w in words) / max(len(words), 1)
 
 
 # ─── SUMMARIZATION ────────────────────────────────────────────────────
-def summarize(text: str, mode: str = "medium") -> str:
+def summarize(text: str, mode="medium") -> str:
     profile = SUMMARY_PROFILES.get(mode, SUMMARY_PROFILES["medium"])
 
-    summary_ratio = profile["summary_ratio"]
-    sentences_per_chunk = profile["sentences_per_chunk"]
-    min_sent = profile["min_sentences"]
-    max_sent = profile["max_sentences"]
+    sentences = sent_tokenize(clean_text(text))
+    valid = [s for s in sentences if is_valid_sentence(s)]
 
-    text = clean_text(text)
-    sentences = sent_tokenize(text)
-
-    indexed = [
-        (i, s) for i, s in enumerate(sentences)
-        if is_valid_sentence(s)
-    ]
-
-    if len(indexed) < 3:
-        return "Not enough readable content to generate a summary."
+    if not valid:
+        return "No readable content found in selected pages."
 
     freq = build_word_frequencies(text)
 
+    scored = [(s, score_sentence(s, freq)) for s in valid]
+    scored.sort(key=lambda x: x[1], reverse=True)
+
     target = max(
-        min_sent,
-        min(max_sent, int(len(indexed) * summary_ratio))
+        profile["min_sentences"],
+        min(profile["max_sentences"], int(len(valid) * profile["summary_ratio"]))
     )
 
-    adaptive_chunk = max(3, len(indexed) // target)
-
-    scored = []
-    total = len(sentences)
-
-    for idx, sent in indexed:
-        pos = idx / max(total, 1)
-        score = score_sentence(sent, freq, pos)
-        scored.append((idx, sent, score))
-
-    selected = []
-    seen = set()
-
-    for i in range(0, len(scored), adaptive_chunk):
-        chunk = scored[i:i + adaptive_chunk]
-        chunk = sorted(chunk, key=lambda x: x[2], reverse=True)
-        picks = chunk[:sentences_per_chunk]
-
-        for idx, sent, score in picks:
-            key = sent.lower().strip()
-            if score > 0 and key not in seen:
-                seen.add(key)
-                selected.append((idx, sent))
-
-    selected.sort(key=lambda x: x[0])
-
-    summary = " ".join(s for _, s in selected)
-    summary = re.sub(r"\s+", " ", summary)
-    summary = re.sub(r"\s([.,!?;:])", r"\1", summary)
-
-    return summary.strip()
+    return " ".join(s for s, _ in scored[:target])
 
 
 # ─── ENTRY POINT ──────────────────────────────────────────────────────
 def main():
-    if len(sys.argv) < 2:
-        print(json.dumps({"error": "No file path provided"}), flush=True)
+    if len(sys.argv) < 3:
+        print(json.dumps({"error": "Invalid arguments"}), flush=True)
         sys.exit(1)
 
     file_path = sys.argv[1]
-    mode = sys.argv[2] if len(sys.argv) > 2 else "medium"
+    mode = sys.argv[2]
+
+    start_page = int(sys.argv[3]) if len(sys.argv) > 3 else None
+    end_page = int(sys.argv[4]) if len(sys.argv) > 4 else None
 
     if not Path(file_path).is_file():
         print(json.dumps({"error": "File not found"}), flush=True)
         sys.exit(1)
 
-    text = extract_text(file_path)
+    text = extract_text(file_path, start_page, end_page)
+
     if not text.strip():
-        print(json.dumps({"error": "Could not extract text"}), flush=True)
+        print(json.dumps({"error": "Could not extract text from selected pages"}), flush=True)
         sys.exit(1)
 
     summary = summarize(text, mode)
 
     print(json.dumps({
         "summary_type": mode,
-        "summary": summary,
-        "stats": {
-            "original_words": len(text.split()),
-            "summary_words": len(summary.split())
-        }
+        "pages": f"{start_page}-{end_page}" if start_page else "full",
+        "summary": summary
     }), flush=True)
 
 

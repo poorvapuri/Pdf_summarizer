@@ -759,8 +759,607 @@
 
 // export default UploadPDF;
 
+// import React, { useState, useRef } from 'react';
+// import { uploadPDF } from '../../services/pdfService';
+
+// function UploadPDF() {
+//   const [file, setFile] = useState(null);
+//   const [summary, setSummary] = useState('');
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState('');
+//   const [dragOver, setDragOver] = useState(false);
+//   const inputRef = useRef(null);
+//   const [summaryType, setSummaryType] = useState("medium");
+
+
+//   const handleFile = (selectedFile) => {
+//     setError('');
+//     if (!selectedFile) return;
+
+//     if (selectedFile.type !== 'application/pdf') {
+//       setError('Please upload a PDF file');
+//       return;
+//     }
+
+//     if (selectedFile.size > 10 * 1024 * 1024) {
+//       setError('File must be less than 10MB');
+//       return;
+//     }
+
+//     setFile(selectedFile);
+//   };
+
+//   const handleUpload = async () => {
+//     if (!file) {
+//       setError('Please select a PDF');
+//       return;
+//     }
+
+//     setLoading(true);
+//     setError('');
+
+//     try {
+//       const response = await uploadPDF(file, summaryType);
+//       setSummary(response.summary);
+//     } catch (err) {
+//       setError(err.response?.data?.message || 'Upload failed');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const downloadSummary = () => {
+//     const blob = new Blob([summary], { type: 'text/plain' });
+//     const url = URL.createObjectURL(blob);
+//     const a = document.createElement('a');
+//     a.href = url;
+//     a.download = `summary-${file?.name || 'document'}.txt`;
+//     a.click();
+//     URL.revokeObjectURL(url);
+//   };
+
+//   const copyToClipboard = async () => {
+//     await navigator.clipboard.writeText(summary);
+//     alert('Copied!');
+//   };
+
+//   const reset = () => {
+//     setFile(null);
+//     setSummary('');
+//     setError('');
+//     if (inputRef.current) inputRef.current.value = '';
+//   };
+
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <h1>Upload PDF</h1>
+//         <p>Get an AI-powered summary of your document</p>
+//       </div>
+
+//       {error && <div className="error">{error}</div>}
+
+//       {loading && (
+//         <div className="loading-overlay">
+//           <div className="spinner"></div>
+//           <div className="loading-text">
+//             Analyzing your PDF
+//             <span className="loading-dots">
+//               <span></span>
+//               <span></span>
+//               <span></span>
+//             </span>
+//           </div>
+//         </div>
+//       )}
+
+//       {!summary ? (
+//         <>
+//           <div
+//             className={`upload-area ${dragOver ? 'dragover' : ''} ${file ? 'has-file' : ''}`}
+//             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+//             onDragLeave={() => setDragOver(false)}
+//             onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
+//             onClick={() => inputRef.current?.click()}
+//           >
+//             <input
+//               ref={inputRef}
+//               type="file"
+//               accept=".pdf"
+//               onChange={(e) => handleFile(e.target.files[0])}
+//               style={{ display: 'none' }}
+//             />
+
+//             <div className="icon">📄</div>
+
+//             {file ? (
+//               <>
+//                 <h3>Ready to upload</h3>
+//                 <div className="file-badge">📎 {file.name}</div>
+//               </>
+//             ) : (
+//               <>
+//                 <h3>Drop your PDF here</h3>
+//                 <p>or click to browse files</p>
+//               </>
+//             )}
+//           </div>
+
+//           <div className="summary-type" style={{ textAlign: "center", marginBottom: "16px" }}>
+//   <label style={{ marginRight: "8px", fontWeight: "500" }}>
+//     Summary Type:
+//   </label>
+//   <select
+//     value={summaryType}
+//     onChange={(e) => setSummaryType(e.target.value)}
+//   >
+//     <option value="short">Short (5–6 lines)</option>
+//     <option value="medium">Medium (1–2 paragraphs)</option>
+//     <option value="detailed">Detailed (section-wise)</option>
+//   </select>
+// </div>
+
+
+//           <div className="upload-btn" style={{ textAlign: 'center' }}>
+//             <button onClick={handleUpload} disabled={!file || loading}>
+//               ⚡ Summarize PDF
+//             </button>
+//           </div>
+//         </>
+//       ) : (
+//         <div className="summary-card">
+//           <div className="summary-header">
+//             <h3>✓ Summary Generated</h3>
+//             <span className="summary-badge">Complete</span>
+//           </div>
+//           <div className="summary-content">{summary}</div>
+//           <div className="summary-actions">
+//             <button onClick={downloadSummary} className="btn-secondary">
+//               📥 Download
+//             </button>
+//             <button onClick={copyToClipboard} className="btn-secondary">
+//               📋 Copy
+//             </button>
+//             <button onClick={reset} className="btn-secondary">
+//               🔄 Upload another
+//             </button>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+// export default UploadPDF;
+
+
+
+// import React, { useState, useRef } from 'react';
+// import { uploadPDF } from '../../services/pdfService';
+// import './UploadPDF.css';
+
+// function UploadPDF() {
+//   const [file, setFile] = useState(null);
+//   const [summary, setSummary] = useState('');
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState('');
+//   const [dragOver, setDragOver] = useState(false);
+//   const [summaryType, setSummaryType] = useState("medium");
+
+//   const inputRef = useRef(null);
+
+//   const handleFile = (selectedFile) => {
+//     setError('');
+//     if (!selectedFile) return;
+
+//     if (selectedFile.type !== 'application/pdf') {
+//       setError('Please upload a PDF file');
+//       return;
+//     }
+
+//     if (selectedFile.size > 10 * 1024 * 1024) {
+//       setError('File must be less than 10MB');
+//       return;
+//     }
+
+//     setFile(selectedFile);
+//   };
+
+//   const handleUpload = async () => {
+//     if (!file) {
+//       setError('Please select a PDF');
+//       return;
+//     }
+
+//     setLoading(true);
+//     setError('');
+
+//     try {
+//       const response = await uploadPDF(file, summaryType);
+//       setSummary(response.summary);
+//     } catch (err) {
+//       setError(err.response?.data?.message || 'Upload failed');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const downloadSummary = () => {
+//     const blob = new Blob([summary], { type: 'text/plain' });
+//     const url = URL.createObjectURL(blob);
+//     const a = document.createElement('a');
+//     a.href = url;
+//     a.download = `summary-${file?.name || 'document'}.txt`;
+//     a.click();
+//     URL.revokeObjectURL(url);
+//   };
+
+//   const copyToClipboard = async () => {
+//     await navigator.clipboard.writeText(summary);
+//     alert('Copied!');
+//   };
+
+//   const reset = () => {
+//     setFile(null);
+//     setSummary('');
+//     setError('');
+//     if (inputRef.current) inputRef.current.value = '';
+//   };
+
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <h1>Upload PDF</h1>
+//         <p>Get an AI-powered summary of your document</p>
+//       </div>
+
+//       {error && <div className="error">{error}</div>}
+
+//       {loading && (
+//         <div className="loading-overlay">
+//           <div className="spinner"></div>
+//           <div className="loading-text">
+//             Analyzing your PDF
+//             <span className="loading-dots">
+//               <span></span>
+//               <span></span>
+//               <span></span>
+//             </span>
+//           </div>
+//         </div>
+//       )}
+
+//       {!summary ? (
+//         <>
+//           {/* Upload Area */}
+//           <div
+//             className={`upload-area ${dragOver ? 'dragover' : ''} ${file ? 'has-file' : ''}`}
+//             onDragOver={(e) => {
+//               e.preventDefault();
+//               setDragOver(true);
+//             }}
+//             onDragLeave={() => setDragOver(false)}
+//             onDrop={(e) => {
+//               e.preventDefault();
+//               setDragOver(false);
+//               handleFile(e.dataTransfer.files[0]);
+//             }}
+//             onClick={() => inputRef.current?.click()}
+//           >
+//             <input
+//               ref={inputRef}
+//               type="file"
+//               accept=".pdf"
+//               onChange={(e) => handleFile(e.target.files[0])}
+//               style={{ display: 'none' }}
+//             />
+
+//             <div className="icon">📄</div>
+
+//             {file ? (
+//               <>
+//                 <h3>Ready to upload</h3>
+//                 <div className="file-badge">📎 {file.name}</div>
+//               </>
+//             ) : (
+//               <>
+//                 <h3>Drop your PDF here</h3>
+//                 <p>or click to browse files</p>
+//               </>
+//             )}
+//           </div>
+
+//           {/* Summary Type */}
+//           <div className="summary-type">
+//             <label>Summary Type</label>
+//             <select
+//               value={summaryType}
+//               onChange={(e) => setSummaryType(e.target.value)}
+//             >
+//               <option value="short">Short (5–6 lines)</option>
+//               <option value="medium">Medium (1–2 paragraphs)</option>
+//               <option value="detailed">Detailed (section-wise)</option>
+//             </select>
+//           </div>
+
+//           {/* Upload Button */}
+//           <div className="upload-btn" style={{ textAlign: 'center' }}>
+//             <button onClick={handleUpload} disabled={!file || loading}>
+//               ⚡ Summarize PDF
+//             </button>
+//           </div>
+//         </>
+//       ) : (
+//         /* Summary Result */
+//         <div className="summary-card">
+//           <div className="summary-header">
+//             <h3>✓ Summary Generated</h3>
+//             <span className="summary-badge">Complete</span>
+//           </div>
+
+//           <div className="summary-content">{summary}</div>
+
+//           <div className="summary-actions">
+//             <button onClick={downloadSummary} className="btn-secondary">
+//               📥 Download
+//             </button>
+//             <button onClick={copyToClipboard} className="btn-secondary">
+//               📋 Copy
+//             </button>
+//             <button onClick={reset} className="btn-secondary">
+//               🔄 Upload another
+//             </button>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+// export default UploadPDF;
+
+
+
+// import React, { useState, useRef } from 'react';
+// import { uploadPDF } from '../../services/pdfService';
+// import './UploadPDF.css';
+
+// function UploadPDF() {
+//   const [file, setFile] = useState(null);
+//   const [summary, setSummary] = useState('');
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState('');
+//   const [dragOver, setDragOver] = useState(false);
+
+//   const [summaryType, setSummaryType] = useState("medium");
+
+//   // 🔹 NEW: Page range states
+//   const [startPage, setStartPage] = useState('');
+//   const [endPage, setEndPage] = useState('');
+
+//   const inputRef = useRef(null);
+
+//   const handleFile = (selectedFile) => {
+//     setError('');
+//     if (!selectedFile) return;
+
+//     if (selectedFile.type !== 'application/pdf') {
+//       setError('Please upload a PDF file');
+//       return;
+//     }
+
+//     if (selectedFile.size > 10 * 1024 * 1024) {
+//       setError('File must be less than 10MB');
+//       return;
+//     }
+
+//     setFile(selectedFile);
+//   };
+
+//   const handleUpload = async () => {
+//     if (!file) {
+//       setError('Please select a PDF');
+//       return;
+//     }
+
+//     // 🔹 Page validation (optional feature)
+//     if (startPage || endPage) {
+//       const s = Number(startPage);
+//       const e = Number(endPage);
+
+//       if (!s || !e || s < 1 || e < 1) {
+//         setError('Page numbers must be greater than 0');
+//         return;
+//       }
+
+//       if (s > e) {
+//         setError('Start page cannot be greater than end page');
+//         return;
+//       }
+//     }
+
+//     setLoading(true);
+//     setError('');
+
+//     try {
+//       const response = await uploadPDF(
+//         file,
+//         summaryType,
+//         startPage || null,
+//         endPage || null
+//       );
+//       setSummary(response.summary);
+//     } catch (err) {
+//       setError(err.response?.data?.message || 'Upload failed');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const downloadSummary = () => {
+//     const blob = new Blob([summary], { type: 'text/plain' });
+//     const url = URL.createObjectURL(blob);
+//     const a = document.createElement('a');
+//     a.href = url;
+//     a.download = `summary-${file?.name || 'document'}.txt`;
+//     a.click();
+//     URL.revokeObjectURL(url);
+//   };
+
+//   const copyToClipboard = async () => {
+//     await navigator.clipboard.writeText(summary);
+//     alert('Copied!');
+//   };
+
+//   const reset = () => {
+//     setFile(null);
+//     setSummary('');
+//     setError('');
+//     setStartPage('');
+//     setEndPage('');
+//     if (inputRef.current) inputRef.current.value = '';
+//   };
+
+//   return (
+//     <div className="page">
+//       <div className="page-header">
+//         <h1>Upload PDF</h1>
+//         <p>Get an AI-powered summary of your document</p>
+//       </div>
+
+//       {error && <div className="error">{error}</div>}
+
+//       {loading && (
+//         <div className="loading-overlay">
+//           <div className="spinner"></div>
+//           <div className="loading-text">
+//             Analyzing your PDF
+//             <span className="loading-dots">
+//               <span></span>
+//               <span></span>
+//               <span></span>
+//             </span>
+//           </div>
+//         </div>
+//       )}
+
+//       {!summary ? (
+//         <>
+//           {/* Upload Area */}
+//           <div
+//             className={`upload-area ${dragOver ? 'dragover' : ''} ${file ? 'has-file' : ''}`}
+//             onDragOver={(e) => {
+//               e.preventDefault();
+//               setDragOver(true);
+//             }}
+//             onDragLeave={() => setDragOver(false)}
+//             onDrop={(e) => {
+//               e.preventDefault();
+//               setDragOver(false);
+//               handleFile(e.dataTransfer.files[0]);
+//             }}
+//             onClick={() => inputRef.current?.click()}
+//           >
+//             <input
+//               ref={inputRef}
+//               type="file"
+//               accept=".pdf"
+//               onChange={(e) => handleFile(e.target.files[0])}
+//               style={{ display: 'none' }}
+//             />
+
+//             <div className="icon">📄</div>
+
+//             {file ? (
+//               <>
+//                 <h3>Ready to upload</h3>
+//                 <div className="file-badge">📎 {file.name}</div>
+//               </>
+//             ) : (
+//               <>
+//                 <h3>Drop your PDF here</h3>
+//                 <p>or click to browse files</p>
+//               </>
+//             )}
+//           </div>
+
+//           {/* 🔹 Page Range */}
+//           <div className="page-range">
+//             <label>Summarize specific pages (optional)</label>
+//             <div className="page-range-inputs">
+//               <input
+//                 type="number"
+//                 min="1"
+//                 placeholder="Start page (e.g. 2)"
+//                 value={startPage}
+//                 onChange={(e) => setStartPage(e.target.value)}
+//               />
+//               <span>to</span>
+//               <input
+//                 type="number"
+//                 min="1"
+//                 placeholder="End page (e.g. 4)"
+//                 value={endPage}
+//                 onChange={(e) => setEndPage(e.target.value)}
+//               />
+//             </div>
+//           </div>
+
+//           {/* Summary Type */}
+//           <div className="summary-type">
+//             <label>Summary Type</label>
+//             <select
+//               value={summaryType}
+//               onChange={(e) => setSummaryType(e.target.value)}
+//             >
+//               <option value="short">Short (5–6 lines)</option>
+//               <option value="medium">Medium (1–2 paragraphs)</option>
+//               <option value="detailed">Detailed (section-wise)</option>
+//             </select>
+//           </div>
+
+//           {/* Upload Button */}
+//           <div className="upload-btn" style={{ textAlign: 'center' }}>
+//             <button onClick={handleUpload} disabled={!file || loading}>
+//               ⚡ Summarize PDF
+//             </button>
+//           </div>
+//         </>
+//       ) : (
+//         /* Summary Result */
+//         <div className="summary-card">
+//           <div className="summary-header">
+//             <h3>✓ Summary Generated</h3>
+//             <span className="summary-badge">Complete</span>
+//           </div>
+
+//           <div className="summary-content">{summary}</div>
+
+//           <div className="summary-actions">
+//             <button onClick={downloadSummary} className="btn-secondary">
+//               📥 Download
+//             </button>
+//             <button onClick={copyToClipboard} className="btn-secondary">
+//               📋 Copy
+//             </button>
+//             <button onClick={reset} className="btn-secondary">
+//               🔄 Upload another
+//             </button>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+// export default UploadPDF;
+
+
+
+
 import React, { useState, useRef } from 'react';
 import { uploadPDF } from '../../services/pdfService';
+import './UploadPDF.css';
 
 function UploadPDF() {
   const [file, setFile] = useState(null);
@@ -768,9 +1367,14 @@ function UploadPDF() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [dragOver, setDragOver] = useState(false);
-  const inputRef = useRef(null);
-  const [summaryType, setSummaryType] = useState("medium");
 
+  const [summaryType, setSummaryType] = useState('medium');
+
+  // 🔹 Page range (optional)
+  const [startPage, setStartPage] = useState('');
+  const [endPage, setEndPage] = useState('');
+
+  const inputRef = useRef(null);
 
   const handleFile = (selectedFile) => {
     setError('');
@@ -795,11 +1399,33 @@ function UploadPDF() {
       return;
     }
 
+    // 🔹 Page validation
+    if (startPage || endPage) {
+      const s = Number(startPage);
+      const e = Number(endPage);
+
+      if (!s || !e || s < 1 || e < 1) {
+        setError('Page numbers must be greater than 0');
+        return;
+      }
+
+      if (s > e) {
+        setError('Start page cannot be greater than end page');
+        return;
+      }
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      const response = await uploadPDF(file, summaryType);
+      const response = await uploadPDF(
+        file,
+        summaryType,
+        startPage || null,
+        endPage || null
+      );
+
       setSummary(response.summary);
     } catch (err) {
       setError(err.response?.data?.message || 'Upload failed');
@@ -827,6 +1453,8 @@ function UploadPDF() {
     setFile(null);
     setSummary('');
     setError('');
+    setStartPage('');
+    setEndPage('');
     if (inputRef.current) inputRef.current.value = '';
   };
 
@@ -855,11 +1483,21 @@ function UploadPDF() {
 
       {!summary ? (
         <>
+          {/* Upload Area */}
           <div
-            className={`upload-area ${dragOver ? 'dragover' : ''} ${file ? 'has-file' : ''}`}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            className={`upload-area ${dragOver ? 'dragover' : ''} ${
+              file ? 'has-file' : ''
+            }`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
             onDragLeave={() => setDragOver(false)}
-            onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              handleFile(e.dataTransfer.files[0]);
+            }}
             onClick={() => inputRef.current?.click()}
           >
             <input
@@ -885,21 +1523,49 @@ function UploadPDF() {
             )}
           </div>
 
-          <div className="summary-type" style={{ textAlign: "center", marginBottom: "16px" }}>
-  <label style={{ marginRight: "8px", fontWeight: "500" }}>
-    Summary Type:
-  </label>
-  <select
-    value={summaryType}
-    onChange={(e) => setSummaryType(e.target.value)}
-  >
-    <option value="short">Short (5–6 lines)</option>
-    <option value="medium">Medium (1–2 paragraphs)</option>
-    <option value="detailed">Detailed (section-wise)</option>
-  </select>
-</div>
+          {/* 🔹 Page Range (OUTSIDE upload-area) */}
+          <div className="page-range">
+            <label>Summarize specific pages (optional)</label>
 
+            <div className="page-range-inputs">
+              <input
+                type="number"
+                min="1"
+                placeholder="From"
+                value={startPage}
+                onChange={(e) => setStartPage(e.target.value)}
+              />
 
+              <span className="page-separator">to</span>
+
+              <input
+                type="number"
+                min="1"
+                placeholder="To"
+                value={endPage}
+                onChange={(e) => setEndPage(e.target.value)}
+              />
+            </div>
+
+            <small className="page-hint">
+              Leave empty to summarize the full document
+            </small>
+          </div>
+
+          {/* Summary Type */}
+          <div className="summary-type">
+            <label>Summary Type</label>
+            <select
+              value={summaryType}
+              onChange={(e) => setSummaryType(e.target.value)}
+            >
+              <option value="short">Short (5–6 lines)</option>
+              <option value="medium">Medium (1–2 paragraphs)</option>
+              <option value="detailed">Detailed (section-wise)</option>
+            </select>
+          </div>
+
+          {/* Upload Button */}
           <div className="upload-btn" style={{ textAlign: 'center' }}>
             <button onClick={handleUpload} disabled={!file || loading}>
               ⚡ Summarize PDF
@@ -907,12 +1573,15 @@ function UploadPDF() {
           </div>
         </>
       ) : (
+        /* Summary Result */
         <div className="summary-card">
           <div className="summary-header">
             <h3>✓ Summary Generated</h3>
             <span className="summary-badge">Complete</span>
           </div>
+
           <div className="summary-content">{summary}</div>
+
           <div className="summary-actions">
             <button onClick={downloadSummary} className="btn-secondary">
               📥 Download

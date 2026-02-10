@@ -341,6 +341,39 @@
 // module.exports = runSummarizer;
 
 
+// const { spawn } = require("child_process");
+// const path = require("path");
+
+// const PYTHON_PATH = process.env.PYTHON_PATH;
+// if (!PYTHON_PATH) throw new Error("PYTHON_PATH not set");
+
+// const SCRIPT_PATH = path.resolve(
+//   __dirname,
+//   "../../ai_service/pdf_summarizer.py"
+// );
+
+// module.exports = (filePath, mode = "medium") =>
+//   new Promise((resolve, reject) => {
+//     const py = spawn(PYTHON_PATH, [SCRIPT_PATH, filePath, mode]);
+
+//     let out = "";
+//     let err = "";
+
+//     py.stdout.on("data", d => (out += d));
+//     py.stderr.on("data", d => (err += d));
+
+//     py.on("close", () => {
+//       if (!out.trim()) return reject("Python returned empty output");
+
+//       try {
+//         resolve(JSON.parse(out));
+//       } catch {
+//         reject("Invalid JSON from Python");
+//       }
+//     });
+//   });
+
+
 const { spawn } = require("child_process");
 const path = require("path");
 
@@ -352,22 +385,47 @@ const SCRIPT_PATH = path.resolve(
   "../../ai_service/pdf_summarizer.py"
 );
 
-module.exports = (filePath, mode = "medium") =>
+/**
+ * Run Python summarizer
+ * @param {string} filePath
+ * @param {string} mode - short | medium | detailed
+ * @param {number|null} startPage
+ * @param {number|null} endPage
+ */
+module.exports = (filePath, mode = "medium", startPage = null, endPage = null) =>
   new Promise((resolve, reject) => {
-    const py = spawn(PYTHON_PATH, [SCRIPT_PATH, filePath, mode]);
+
+    // 🔹 Build Python arguments dynamically
+    const args = [SCRIPT_PATH, filePath, mode];
+
+    if (startPage !== null && endPage !== null) {
+      args.push(String(startPage));
+      args.push(String(endPage));
+    }
+
+    console.log("🐍 Running Python with args:", args);
+
+    const py = spawn(PYTHON_PATH, args);
 
     let out = "";
     let err = "";
 
-    py.stdout.on("data", d => (out += d));
-    py.stderr.on("data", d => (err += d));
+    py.stdout.on("data", d => (out += d.toString()));
+    py.stderr.on("data", d => (err += d.toString()));
 
     py.on("close", () => {
-      if (!out.trim()) return reject("Python returned empty output");
+      if (err) {
+        console.error("🐍 Python stderr:", err);
+      }
+
+      if (!out.trim()) {
+        return reject("Python returned empty output");
+      }
 
       try {
         resolve(JSON.parse(out));
-      } catch {
+      } catch (e) {
+        console.error("🐍 Raw Python output:", out);
         reject("Invalid JSON from Python");
       }
     });
