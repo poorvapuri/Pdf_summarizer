@@ -1359,7 +1359,10 @@
 
 import React, { useState, useRef } from 'react';
 import { uploadPDF } from '../../services/pdfService';
+import * as pdfjsLib from 'pdfjs-dist';
 import './UploadPDF.css';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 function UploadPDF() {
   const [file, setFile] = useState(null);
@@ -1373,6 +1376,7 @@ function UploadPDF() {
   const [dragOver, setDragOver] = useState(false);
 
   const [summaryType, setSummaryType] = useState('medium');
+  const [suggestion, setSuggestion] = useState('');
 
   // 🔹 Page range (optional)
   const [startPage, setStartPage] = useState('');
@@ -1395,6 +1399,38 @@ function UploadPDF() {
     }
 
     setFile(selectedFile);
+    calculateWordCount(selectedFile);
+  };
+
+  const calculateWordCount = async (pdfFile) => {
+    try {
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+      let fullText = '';
+      
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + ' ';
+      }
+      
+      const words = fullText.trim().split(/\s+/).filter(word => word.length > 0);
+      const count = words.length;
+      
+      let sugg = '';
+      if (count < 100) {
+        sugg = 'Short';
+      } else if (count <= 300) {
+        sugg = 'Medium';
+      } else {
+        sugg = 'Detailed';
+      }
+      setSuggestion(sugg);
+    } catch (err) {
+      console.error("Error reading PDF for word count:", err);
+      setSuggestion('');
+    }
   };
 
   const handleUpload = async () => {
@@ -1469,6 +1505,7 @@ function UploadPDF() {
     setError('');
     setStartPage('');
     setEndPage('');
+    setSuggestion('');
     if (inputRef.current) inputRef.current.value = '';
   };
 
@@ -1593,7 +1630,7 @@ function UploadPDF() {
           {/* Upload Button */}
           <div className="upload-btn" style={{ textAlign: 'center' }}>
             <button onClick={handleUpload} disabled={!file || loading}>
-              ⚡ Summarize PDF
+              ⚡ Summarize PDF {suggestion ? `(Suggestion: ${suggestion})` : ''}
             </button>
           </div>
         </>

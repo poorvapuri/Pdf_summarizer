@@ -194,9 +194,6 @@ function Navbar() {
         <Link to="/history" className={isActive('/history')}>
            History
         </Link>
-        <Link to="/headings" className={isActive('/headings')}>
-           Headings
-        </Link>
         <button onClick={handleLogout}> Logout</button>
       </div>
     </nav>

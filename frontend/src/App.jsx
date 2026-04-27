@@ -159,7 +159,6 @@ import Register from './components/Auth/Register';
 import Home from './components/Dashboard/Home';
 import UploadPDF from './components/PDF/UploadPDF';
 import History from './components/History/History';
-import Headings from './components/Headings/Headings';
 import Navbar from './components/Navbar';
 
 // Check if user is authenticated
@@ -210,14 +209,6 @@ function App() {
           element={
             <ProtectedRoute>
               <History />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/headings"
-          element={
-            <ProtectedRoute>
-              <Headings />
             </ProtectedRoute>
           }
         />

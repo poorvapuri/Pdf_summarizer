@@ -701,6 +701,11 @@ function History() {
                     <h3 style={{ margin: 0, fontSize: '1.25rem', marginBottom: '4px', color: 'var(--text-primary)' }}>
                       {item.filename || item.fileName || 'Untitled'}
                     </h3>
+                    {item.selectedHeading && (
+                      <div style={{ marginBottom: '6px', fontSize: '1rem', color: '#0056b3', fontWeight: '500' }}>
+                        Heading: {item.selectedHeading}
+                      </div>
+                    )}
                     <small>{formatDate(item.createdAt)}</small>
                   </div>
                 </div>

@@ -84,5 +84,17 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle expired tokens (401 Unauthorized)
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const getHistory = () => API.get('/history');
 export const deleteHistory = (id) => API.delete(`/history/${id}`);

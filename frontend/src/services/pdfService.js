@@ -127,6 +127,18 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle expired tokens (401 Unauthorized)
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 /**
  * Upload PDF for summarization
  * @param {File} file
