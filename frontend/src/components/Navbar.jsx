@@ -186,15 +186,18 @@ function Navbar() {
 
       <div className="nav-links">
         <Link to="/dashboard" className={isActive('/dashboard')}>
-          🏠 Home
+           Home
         </Link>
         <Link to="/upload" className={isActive('/upload')}>
-          📤 Upload
+           Upload
         </Link>
         <Link to="/history" className={isActive('/history')}>
-          📋 History
+           History
         </Link>
-        <button onClick={handleLogout}>🚪 Logout</button>
+        <Link to="/headings" className={isActive('/headings')}>
+           Headings
+        </Link>
+        <button onClick={handleLogout}> Logout</button>
       </div>
     </nav>
   );

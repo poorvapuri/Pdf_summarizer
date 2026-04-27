@@ -81,7 +81,7 @@
 // import axios from 'axios';
 
 // const API = axios.create({
-//   baseURL: 'http://localhost:5001/api'
+//   baseURL: 'http://localhost:5000/api'
 // });
 
 // API.interceptors.request.use((config) => {
@@ -112,7 +112,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://localhost:5001/api'
+  baseURL: 'http://localhost:5000/api'
 });
 
 // Attach JWT token automatically
@@ -151,5 +151,15 @@ export const uploadPDF = async (
   }
 
   const response = await API.post('/pdf/upload', formData);
+  return response.data;
+};
+
+/**
+ * Select a heading for a summary
+ * @param {string} id - Summary ID
+ * @param {string} heading - The selected heading string
+ */
+export const selectHeading = async (id, heading) => {
+  const response = await API.put(`/pdf/summary/${id}/heading`, { heading });
   return response.data;
 };

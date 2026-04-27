@@ -27,4 +27,6 @@ router.post(
   pdfController.uploadAndSummarize   // ✅ THIS is the function
 );
 
+router.put("/summary/:id/heading", auth, pdfController.selectHeading);
+
 module.exports = router;

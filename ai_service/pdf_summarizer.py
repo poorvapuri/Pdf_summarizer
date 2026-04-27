@@ -1199,6 +1199,48 @@ def summarize(text: str, mode="medium") -> str:
     return " ".join(s for s, _ in scored[:target])
 
 
+# ─── HEADING GENERATION ───────────────────────────────────────────────
+def generate_headings(text: str, summary: str) -> list:
+    headings = []
+    
+    # 1. First sentence of the summary
+    sentences = sent_tokenize(summary)
+    if sentences:
+        first_sent = sentences[0]
+        words = word_tokenize(first_sent)
+        alpha_words = [w for w in words if w.isalpha()]
+        if len(alpha_words) > 6:
+            headings.append(" ".join(alpha_words[:6]).title() + "...")
+        elif alpha_words:
+            headings.append(" ".join(alpha_words).title())
+            
+    # 2. Keyword extraction (using original words)
+    raw_freq = {}
+    for w in word_tokenize(text.lower()):
+        if w.isalpha() and w not in STOP and len(w) > 3:
+            raw_freq[w] = raw_freq.get(w, 0) + 1
+            
+    sorted_raw = sorted(raw_freq.items(), key=lambda item: item[1], reverse=True)
+    top_words = [w.title() for w, score in sorted_raw[:2]]
+    if top_words:
+        headings.append(" ".join(top_words) + " Overview")
+        
+    if len(sorted_raw) > 4:
+        next_words = [w.title() for w, score in sorted_raw[2:4]]
+        if next_words:
+            headings.append(" ".join(next_words) + " Highlights")
+            
+    if not headings:
+        headings.append("Document Summary")
+        
+    unique_headings = []
+    for h in headings:
+        if h not in unique_headings:
+            unique_headings.append(h)
+            
+    return unique_headings[:3]
+
+
 # ─── ENTRY POINT ──────────────────────────────────────────────────────
 def main():
     if len(sys.argv) < 3:
@@ -1222,11 +1264,13 @@ def main():
         sys.exit(1)
 
     summary = summarize(text, mode)
+    headings = generate_headings(text, summary)
 
     print(json.dumps({
         "summary_type": mode,
         "pages": f"{start_page}-{end_page}" if start_page else "full",
-        "summary": summary
+        "summary": summary,
+        "headings": headings
     }), flush=True)
 
 

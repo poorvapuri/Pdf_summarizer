@@ -891,6 +891,10 @@ button:disabled {
   overflow: hidden;
 }
 
+.history-text.expanded {
+  display: block;
+}
+
 .history-btns {
   display: flex;
   gap: 0.5rem;

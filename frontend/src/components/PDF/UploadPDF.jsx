@@ -1364,6 +1364,10 @@ import './UploadPDF.css';
 function UploadPDF() {
   const [file, setFile] = useState(null);
   const [summary, setSummary] = useState('');
+  const [headings, setHeadings] = useState([]);
+  const [selectedHeading, setSelectedHeading] = useState('');
+  const [summaryId, setSummaryId] = useState(null);
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [dragOver, setDragOver] = useState(false);
@@ -1427,6 +1431,9 @@ function UploadPDF() {
       );
 
       setSummary(response.summary);
+      setHeadings(response.headings || []);
+      setSummaryId(response._id);
+      setSelectedHeading(response.selectedHeading || '');
     } catch (err) {
       setError(err.response?.data?.message || 'Upload failed');
     } finally {
@@ -1435,7 +1442,11 @@ function UploadPDF() {
   };
 
   const downloadSummary = () => {
-    const blob = new Blob([summary], { type: 'text/plain' });
+    let text = summary;
+    if (selectedHeading) {
+      text = `${selectedHeading}\n\n${summary}`;
+    }
+    const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1452,10 +1463,24 @@ function UploadPDF() {
   const reset = () => {
     setFile(null);
     setSummary('');
+    setHeadings([]);
+    setSelectedHeading('');
+    setSummaryId(null);
     setError('');
     setStartPage('');
     setEndPage('');
     if (inputRef.current) inputRef.current.value = '';
+  };
+
+  const handleSelectHeading = async (heading) => {
+    if (!summaryId) return;
+    try {
+      const { selectHeading } = await import('../../services/pdfService');
+      const response = await selectHeading(summaryId, heading);
+      setSelectedHeading(response.selectedHeading);
+    } catch (err) {
+      setError('Failed to select heading');
+    }
   };
 
   return (
@@ -1580,7 +1605,36 @@ function UploadPDF() {
             <span className="summary-badge">Complete</span>
           </div>
 
-          <div className="summary-content">{summary}</div>
+          {headings && headings.length > 0 && (
+            <div className="summary-headings">
+              <h4>Suggested Headings:</h4>
+              <div className="headings-list">
+                {headings.map((h, i) => (
+                  <button
+                    key={i}
+                    className={`heading-pill ${selectedHeading === h ? 'selected' : ''}`}
+                    onClick={() => handleSelectHeading(h)}
+                    style={{
+                      margin: '4px',
+                      padding: '8px 16px',
+                      borderRadius: '20px',
+                      border: selectedHeading === h ? '2px solid #0056b3' : '1px solid #ccc',
+                      backgroundColor: selectedHeading === h ? '#e6f2ff' : '#f8f9fa',
+                      cursor: 'pointer',
+                      fontWeight: selectedHeading === h ? 'bold' : 'normal'
+                    }}
+                  >
+                    {h}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="summary-content" style={{ marginTop: '20px' }}>
+            {selectedHeading && <h2 style={{ marginBottom: '16px' }}>{selectedHeading}</h2>}
+            {summary}
+          </div>
 
           <div className="summary-actions">
             <button onClick={downloadSummary} className="btn-secondary">

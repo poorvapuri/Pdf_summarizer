@@ -118,7 +118,8 @@ exports.uploadAndSummarize = async (req, res) => {
     const record = await Summary.create({
       userId: req.userId,
       fileName: req.file.originalname,
-      summary: result.summary
+      summary: result.summary,
+      headings: result.headings || []
     });
 
     res.json(record);
@@ -127,5 +128,27 @@ exports.uploadAndSummarize = async (req, res) => {
     res.status(500).json({
       message: err.message || "Upload failed"
     });
+  }
+};
+
+exports.selectHeading = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { heading } = req.body;
+    
+    const summary = await Summary.findOneAndUpdate(
+      { _id: id, userId: req.userId },
+      { selectedHeading: heading },
+      { new: true }
+    );
+    
+    if (!summary) {
+      return res.status(404).json({ message: "Summary not found" });
+    }
+    
+    res.json(summary);
+  } catch (err) {
+    console.error("❌ Select heading error:", err);
+    res.status(500).json({ message: "Failed to select heading" });
   }
 };

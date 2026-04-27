@@ -611,6 +611,7 @@ function History() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(null);
+  const [expandedIds, setExpandedIds] = useState([]);
 
   useEffect(() => {
     fetchHistory();
@@ -659,6 +660,12 @@ function History() {
     });
   };
 
+  const toggleExpand = (id) => {
+    setExpandedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
   if (loading) {
     return (
       <div className="page">
@@ -691,7 +698,9 @@ function History() {
                 <div className="history-info">
                   <div className="history-icon">📄</div>
                   <div className="history-meta">
-                    <strong>{item.filename || 'Untitled'}</strong>
+                    <h3 style={{ margin: 0, fontSize: '1.25rem', marginBottom: '4px', color: 'var(--text-primary)' }}>
+                      {item.filename || item.fileName || 'Untitled'}
+                    </h3>
                     <small>{formatDate(item.createdAt)}</small>
                   </div>
                 </div>
@@ -713,7 +722,30 @@ function History() {
                   </button>
                 </div>
               </div>
-              <p className="history-text">{item.summary}</p>
+              <div className="history-summary-container">
+                <p className={`history-text ${expandedIds.includes(item._id) ? 'expanded' : ''}`} style={{ whiteSpace: 'pre-wrap' }}>
+                  {expandedIds.includes(item._id) ? item.summary : (item.summary?.substring(0, 150) + (item.summary?.length > 150 ? '...' : ''))}
+                </p>
+                {item.summary && item.summary.length > 150 && (
+                  <button 
+                    onClick={() => toggleExpand(item._id)}
+                    style={{ 
+                      background: 'none', 
+                      border: 'none', 
+                      cursor: 'pointer', 
+                      color: 'var(--accent-primary)', 
+                      marginTop: '0.5rem', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.25rem', 
+                      fontSize: '0.85rem',
+                      fontWeight: '600'
+                    }}
+                  >
+                    {expandedIds.includes(item._id) ? 'Show Less' : 'Read More'}
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
