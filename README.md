@@ -1,111 +1,157 @@
 # PDF Summarizer
 
-A full-stack web application for uploading PDF documents and generating summaries. The project includes a React frontend, an Express/Node backend, a Python-based summarization service, and MongoDB storage.
+A web application that extracts text from PDF documents and generates concise summaries. Users can summarize an entire PDF or selected page ranges, making it easier to quickly understand lengthy documents.
+
+## Live Demo
+
+**Live Demo:** https://pdf-summarizer-delta-opal.vercel.app
 
 ## Features
 
-- User registration and login
-- PDF upload and summary generation
-- History of previous summaries
-- Profile access and basic authentication flow
+* User Authentication (Login & Signup)
+* PDF Upload and Validation
+* Text Extraction from PDF Files
+* OCR Support for Scanned PDFs
+* Multiple Summary Modes (Short, Medium, Detailed)
+* Page-Range Based Summarization
+* Automatic Heading Generation
+* Summary History Tracking
+* Email Sharing of Summaries
+* Responsive User Interface
+* MongoDB Atlas Integration
 
 ## Tech Stack
 
-- Frontend: React, React Router, Axios
-- Backend: Node.js, Express, MongoDB, Mongoose, JWT
-- AI service: Python, NLTK, pytesseract, pdf2image, slate3k
+### Frontend
+
+* React.js
+* Axios
+* CSS
+
+### Backend
+
+* Node.js
+* Express.js
+* JWT Authentication
+* MongoDB Atlas
+
+### AI Service
+
+* Python
+* NLTK
+* Tesseract OCR
+* pdf2image
+* slate3k
+
+### Testing
+
+* Selenium
+* TestNG
+
+## How It Works
+
+1. User uploads a PDF document.
+2. Text is extracted from the PDF.
+3. If text extraction is not possible, OCR is used.
+4. The text is cleaned and processed.
+5. Important sentences are identified and ranked.
+6. A summary is generated based on the selected mode.
+7. The summary is displayed and saved to history.
 
 ## Project Structure
 
-- frontend/ - React client application
-- backend/ - Express API server
-- ai_service/ - Python summarization scripts and dependencies
+```text
+PDF_SUMMARIZER
+│
+├── frontend/
+├── backend/
+├── ai_service/
+└── README.md
+```
 
-## Prerequisites
+## Installation
 
-Before running the project locally, make sure you have:
+### Clone Repository
 
-- Node.js and npm installed
-- Python 3 installed
-- MongoDB Atlas connection string
-- Tesseract OCR installed if OCR-based extraction is needed
+```bash
+git clone <repository-url>
+cd PDF_SUMMARIZER
+```
 
-## Backend Setup
+### Backend Setup
 
-1. Navigate to the backend folder:
-   ```bash
-   cd backend
-   ```
+```bash
+cd backend
+npm install
+```
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+Create a `.env` file:
 
-3. Create a `.env` file in the backend folder with the following values:
-   ```env
-   PORT=5000
-   MONGO_URI=your_mongodb_atlas_connection_string
-   JWT_SECRET=your_secret_key
-   PYTHON_PATH=python3
-   ```
+```env
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret_key
+PYTHON_PATH=python3
+```
 
-4. Start the backend:
-   ```bash
-   npm start
-   ```
+Start the backend:
 
-## Python Dependency Setup
+```bash
+npm start
+```
 
-Install the required Python packages:
+### Python Setup
 
 ```bash
 cd ai_service
-python -m pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
-If you plan to use OCR-related features, install Tesseract OCR separately and ensure it is available in your system PATH.
+### Frontend Setup
 
-## Frontend Setup
-
-1. Navigate to the frontend folder:
-   ```bash
-   cd frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the frontend:
-   ```bash
-   npm start
-   ```
-
-The frontend will run locally and communicate with the backend at the configured API URL.
-
-## API Configuration
-
-The frontend currently uses a hardcoded backend URL in the service files. For local development, this is typically:
-
-```text
-http://localhost:5000/api
+```bash
+cd frontend
+npm install
 ```
 
-For deployment, update the API base URL in the frontend service files to point to your deployed backend.
+Create a `.env` file:
 
-## Deployment Notes
+```env
+REACT_APP_API_URL=http://localhost:5000
+```
 
-A simple deployment approach is:
+Start the frontend:
 
-- Frontend: Vercel or Netlify
-- Backend: Render or Railway
-- Database: MongoDB Atlas
+```bash
+npm start
+```
 
-Make sure to set the same environment variables in your hosting platform for the backend.
+## Screenshots
 
-## Notes
+### Login Page
 
-- Uploaded PDF files are handled by the backend and may require persistent storage in production.
-- For production deployments, consider storing uploaded files in cloud storage instead of local disk.
+*Add screenshot here*
+
+### Dashboard
+
+*Add screenshot here*
+
+### Upload PDF
+
+*Add screenshot here*
+
+### Summary Result
+
+*Add screenshot here*
+
+### History Page
+
+*Add screenshot here*
+
+## Future Enhancements
+
+* Multi-Language Support
+* Advanced AI-Based Summarization
+* Export Summaries as PDF
+* Improved OCR Accuracy
+* Keyword-Based Search
