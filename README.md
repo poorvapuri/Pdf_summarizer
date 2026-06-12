@@ -140,13 +140,9 @@ npm start
 
 ![alt text](image-2.png)
 
-### Summary Result
-
-*Add screenshot here*
-
 ### History Page
 
-*Add screenshot here*
+![alt text](image-3.png)
 
 ## Future Enhancements
 
