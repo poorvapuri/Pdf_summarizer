@@ -1068,12 +1068,24 @@ import re
 import logging
 from pathlib import Path
 
-import pytesseract
-import slate3k as slate
-from pdf2image import convert_from_path
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize, sent_tokenize
-from nltk.stem.snowball import SnowballStemmer
+try:
+    import pytesseract
+    import slate3k as slate
+    from pdf2image import convert_from_path
+    from nltk.corpus import stopwords
+    from nltk.tokenize import word_tokenize, sent_tokenize
+    from nltk.stem.snowball import SnowballStemmer
+except Exception as exc:
+    pytesseract = None
+    slate = None
+    convert_from_path = None
+    stopwords = None
+    word_tokenize = None
+    sent_tokenize = None
+    SnowballStemmer = None
+    IMPORT_ERROR = str(exc)
+else:
+    IMPORT_ERROR = None
 
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
@@ -1083,8 +1095,8 @@ POPPLER_PATH = None  # ✅ macOS uses system poppler
 MIN_SENTENCE_WORDS = 6
 MAX_SENTENCE_WORDS = 60
 
-STOP = set(stopwords.words("english"))
-STEMMER = SnowballStemmer("english")
+STOP = set(stopwords.words("english")) if stopwords else set()
+STEMMER = SnowballStemmer("english") if SnowballStemmer else None
 
 SUMMARY_PROFILES = {
     "short": {
@@ -1109,6 +1121,9 @@ SUMMARY_PROFILES = {
 
 # ─── TEXT EXTRACTION ──────────────────────────────────────────────────
 def extract_text_pdf(path: str) -> str:
+    if slate is None:
+        return ""
+
     try:
         with open(path, "rb") as f:
             return " ".join(slate.PDF(f))
@@ -1117,6 +1132,9 @@ def extract_text_pdf(path: str) -> str:
 
 
 def extract_text_ocr(path: str, start_page=None, end_page=None) -> str:
+    if convert_from_path is None or pytesseract is None:
+        return ""
+
     try:
         pages = convert_from_path(
             path,
@@ -1151,6 +1169,9 @@ def clean_text(text: str) -> str:
 
 # ─── SENTENCE FILTERING ──────────────────────────────────────────────
 def is_valid_sentence(sentence: str) -> bool:
+    if not word_tokenize:
+        return False
+
     words = word_tokenize(sentence)
     alpha_words = [w for w in words if w.isalpha()]
     return MIN_SENTENCE_WORDS <= len(alpha_words) <= MAX_SENTENCE_WORDS
@@ -1158,6 +1179,9 @@ def is_valid_sentence(sentence: str) -> bool:
 
 # ─── SCORING ──────────────────────────────────────────────────────────
 def build_word_frequencies(text: str) -> dict:
+    if not word_tokenize or not STEMMER:
+        return {}
+
     freq = {}
     for w in word_tokenize(text.lower()):
         if w.isalpha() and w not in STOP:
@@ -1169,6 +1193,9 @@ def build_word_frequencies(text: str) -> dict:
 
 
 def score_sentence(sentence: str, freq: dict) -> float:
+    if not STEMMER or not word_tokenize:
+        return 0.0
+
     words = [
         STEMMER.stem(w) for w in word_tokenize(sentence.lower())
         if w.isalpha() and w not in STOP
@@ -1178,6 +1205,9 @@ def score_sentence(sentence: str, freq: dict) -> float:
 
 # ─── SUMMARIZATION ────────────────────────────────────────────────────
 def summarize(text: str, mode="medium") -> str:
+    if not sent_tokenize or not word_tokenize or not STEMMER:
+        return "Summary generation is unavailable because the required Python dependencies are not installed on the server."
+
     profile = SUMMARY_PROFILES.get(mode, SUMMARY_PROFILES["medium"])
 
     sentences = sent_tokenize(clean_text(text))
@@ -1244,8 +1274,8 @@ def generate_headings(text: str, summary: str) -> list:
 # ─── ENTRY POINT ──────────────────────────────────────────────────────
 def main():
     if len(sys.argv) < 3:
-        print(json.dumps({"error": "Invalid arguments"}), flush=True)
-        sys.exit(1)
+        print(json.dumps({"summary": "Invalid arguments", "error": "No file path or mode provided"}), flush=True)
+        sys.exit(0)
 
     file_path = sys.argv[1]
     mode = sys.argv[2]
@@ -1254,24 +1284,41 @@ def main():
     end_page = int(sys.argv[4]) if len(sys.argv) > 4 else None
 
     if not Path(file_path).is_file():
-        print(json.dumps({"error": "File not found"}), flush=True)
-        sys.exit(1)
+        print(json.dumps({"summary": "File not found", "error": f"File not found: {file_path}"}), flush=True)
+        sys.exit(0)
 
-    text = extract_text(file_path, start_page, end_page)
+    if IMPORT_ERROR:
+        print(json.dumps({
+            "summary": "Summary generation is unavailable on this server.",
+            "error": IMPORT_ERROR
+        }), flush=True)
+        sys.exit(0)
 
-    if not text.strip():
-        print(json.dumps({"error": "Could not extract text from selected pages"}), flush=True)
-        sys.exit(1)
+    try:
+        text = extract_text(file_path, start_page, end_page)
 
-    summary = summarize(text, mode)
-    headings = generate_headings(text, summary)
+        if not text.strip():
+            print(json.dumps({
+                "summary": "Could not extract text from selected pages.",
+                "error": "No readable text found"
+            }), flush=True)
+            sys.exit(0)
 
-    print(json.dumps({
-        "summary_type": mode,
-        "pages": f"{start_page}-{end_page}" if start_page else "full",
-        "summary": summary,
-        "headings": headings
-    }), flush=True)
+        summary = summarize(text, mode)
+        headings = generate_headings(text, summary)
+
+        print(json.dumps({
+            "summary_type": mode,
+            "pages": f"{start_page}-{end_page}" if start_page is not None else "full",
+            "summary": summary,
+            "headings": headings
+        }), flush=True)
+    except Exception as exc:
+        print(json.dumps({
+            "summary": "Error processing the PDF.",
+            "error": str(exc)
+        }), flush=True)
+        sys.exit(0)
 
 
 if __name__ == "__main__":

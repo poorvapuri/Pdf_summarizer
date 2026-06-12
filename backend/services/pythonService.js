@@ -413,20 +413,25 @@ module.exports = (filePath, mode = "medium", startPage = null, endPage = null) =
     py.stdout.on("data", d => (out += d.toString()));
     py.stderr.on("data", d => (err += d.toString()));
 
-    py.on("close", () => {
+    py.on("error", (error) => {
+      console.error("🐍 Python process error:", error.message);
+      reject(`Failed to start Python process: ${error.message}`);
+    });
+
+    py.on("close", (code) => {
       if (err) {
         console.error("🐍 Python stderr:", err);
       }
 
       if (!out.trim()) {
-        return reject("Python returned empty output");
+        return reject(err || `Python exited with code ${code}`);
       }
 
       try {
         resolve(JSON.parse(out));
       } catch (e) {
         console.error("🐍 Raw Python output:", out);
-        reject("Invalid JSON from Python");
+        reject(err || "Invalid JSON from Python");
       }
     });
   });
