@@ -130,15 +130,15 @@ npm start
 
 ### Login Page
 
-*Add screenshot here*
+![alt text](image-1.png)
 
 ### Dashboard
 
-*Add screenshot here*
+![alt text](image.png)
 
 ### Upload PDF
 
-*Add screenshot here*
+![alt text](image-2.png)
 
 ### Summary Result
 
