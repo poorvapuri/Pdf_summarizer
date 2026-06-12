@@ -1,0 +1,148 @@
+ALL POSSIBLE TEST CASES FOR PDF SUMMARIZER
+===========================================
+
+This file lists comprehensive test cases for the entire PDF Summarizer application, including frontend UI, backend API, authentication, PDF upload and summarization, history management, and integration flows.
+
+1. AUTHENTICATION / AUTHORIZATION
+---------------------------------
+[AUTH-01] Register new user successfully with valid email and password.
+[AUTH-02] Reject registration when required fields are missing.
+[AUTH-03] Reject registration when password is too weak or too short.
+[AUTH-04] Reject registration when email is already in use.
+[AUTH-05] Login successfully with valid credentials.
+[AUTH-06] Reject login with invalid email or password.
+[AUTH-07] Return 401 Unauthorized when accessing protected endpoint without token.
+[AUTH-08] Return 401 Unauthorized when accessing protected endpoint with invalid token.
+[AUTH-09] Return 401 Unauthorized when accessing protected endpoint with expired token.
+[AUTH-10] Ensure the client clears token and redirects to login on 401 Unauthorized.
+
+2. FRONTEND UI / USER INTERFACE
+------------------------------
+Component: UploadPDF / Summary View / History / Auth Pages
+
+[UI-01] Verify the upload button is visible and enabled when no upload is in progress.
+[UI-02] Verify drag-and-drop accepts PDF files and rejects unsupported file types.
+[UI-03] Verify selecting a non-PDF file shows a clear error message.
+[UI-04] Verify selecting an empty file or corrupt PDF shows an error message.
+[UI-05] Verify file size validation prevents uploads above the configured limit (e.g., 10MB).
+[UI-06] Verify UI enters loading state after file upload starts.
+[UI-07] Verify the upload progress indicator updates during file upload.
+[UI-08] Verify the generated summary is displayed after a successful response.
+[UI-09] Verify the summary content is readable and formatted correctly.
+[UI-10] Verify the user can copy the summary text to clipboard successfully.
+[UI-11] Verify the user can download the summary as a .txt file.
+[UI-12] Verify the upload form resets after a successful upload if expected by UX.
+[UI-13] Verify error notifications display for API failures and backend errors.
+[UI-14] Verify validation error messages are displayed for missing required form fields.
+[UI-15] Verify the app layout is responsive on mobile, tablet, and desktop viewport widths.
+[UI-16] Verify navigation between Home, Upload, History, Login, and Register works correctly.
+[UI-17] Verify protected routes redirect unauthenticated users to the login page.
+[UI-18] Verify authenticated users remain logged in after page refresh when token exists.
+[UI-19] Verify the logout flow clears auth state and redirects to login.
+[UI-20] Verify the history page shows a message when no previous summaries exist.
+[UI-21] Verify the history page lists summaries and summary details correctly.
+[UI-22] Verify the history page shows timestamps, filename, and summary preview.
+[UI-23] Verify the history delete action removes a summary after confirmation.
+[UI-24] Verify selecting a heading updates the summary record if heading selection is supported.
+[UI-25] Verify the app shows an error message if loading history fails.
+[UI-26] Verify uploading with optional page range fields works as expected.
+
+3. BACKEND API / PDF UPLOAD PROCESSING
+-------------------------------------
+Module: /api/pdf/upload, /api/pdf/summary/:id/heading, /api/history
+
+[API-01] POST /api/pdf/upload succeeds with a valid PDF upload and returns 200 OK.
+[API-02] POST /api/pdf/upload rejects a request with no file and returns 400 Bad Request.
+[API-03] POST /api/pdf/upload rejects unsupported file types at middleware and returns 400 or 415.
+[API-04] POST /api/pdf/upload rejects files larger than the server limit and returns 413 Payload Too Large or corresponding error.
+[API-05] POST /api/pdf/upload rejects requests without a valid Authorization header.
+[API-06] POST /api/pdf/upload rejects requests with malformed Authorization header.
+[API-07] POST /api/pdf/upload accepts valid summaryType values and ignores invalid values by defaulting to medium.
+[API-08] POST /api/pdf/upload accepts startPage and endPage values and limits summarization to the requested page range.
+[API-09] POST /api/pdf/upload returns a meaningful error when the summarization service fails.
+[API-10] POST /api/pdf/upload returns a meaningful error when PDF extraction fails.
+[API-11] POST /api/pdf/upload returns a meaningful error when the database save fails.
+[API-12] POST /api/pdf/upload handles requests for scanned or image-based PDFs gracefully.
+[API-13] POST /api/pdf/upload avoids server crashes for very large documents or long-running summarization.
+[API-14] PUT /api/pdf/summary/:id/heading updates the chosen heading for the summary record.
+[API-15] PUT /api/pdf/summary/:id/heading returns 401 on missing or invalid auth token.
+[API-16] PUT /api/pdf/summary/:id/heading returns 404 when the summary ID is not found or not owned by the user.
+[API-17] GET /api/history returns only history records for the authenticated user.
+[API-18] GET /api/history returns an empty list when the user has no saved summaries.
+[API-19] GET /api/history returns 401 Unauthorized when no token is provided.
+[API-20] DELETE /api/history/:id deletes the specified history record.
+[API-21] DELETE /api/history/:id returns 404 if the summary record does not exist.
+[API-22] DELETE /api/history/:id returns 401 when unauthorized or missing token.
+
+4. DATABASE / HISTORY / RECORD MANAGEMENT
+----------------------------------------
+Module: Summary persistence and history retrieval
+
+[DB-01] Verify a summary record is created for each successful PDF summarization.
+[DB-02] Verify the saved record includes userId, fileName, summary text, headings, and metadata.
+[DB-03] Verify a user can retrieve only their own summary records.
+[DB-04] Verify deleteHistory removes only the specified record and does not affect other users.
+[DB-05] Verify summary records are persisted correctly across server restarts.
+[DB-06] Verify history retrieval returns records sorted or filtered as expected by UI.
+[DB-07] Verify summary selection updates the correct record without data loss.
+
+5. AI / TEXT EXTRACTION / SUMMARIZATION SERVICE
+----------------------------------------------
+Module: ai_service / pythonService / summary generation
+
+[AI-01] Verify text extraction works for a standard text-based PDF and returns meaningful text.
+[AI-02] Verify summarization logic produces a summary for a valid text-based PDF.
+[AI-03] Verify page-range summarization returns text only from the requested pages.
+[AI-04] Verify summaryType short / medium / detailed produce different expected summary lengths (if implemented).
+[AI-05] Verify scanned/image PDF files are handled gracefully or return a clear "unsupported"/OCR failure message.
+[AI-06] Verify error conditions from the Python service propagate cleanly to the API response.
+[AI-07] Verify the app handles empty extracted text by returning a user-facing message like "No readable text could be extracted."
+[AI-08] Verify the service handles malformed PDF files without crashing the Node.js server.
+
+6. SECURITY / ACCESS CONTROL
+----------------------------
+
+[SEC-01] Ensure protected endpoints require a valid JWT token.
+[SEC-02] Ensure tokens are not accepted after logout if the client cleared them.
+[SEC-03] Verify the token storage strategy does not expose secrets in browser logs.
+[SEC-04] Verify invalid token formats do not crash middleware.
+[SEC-05] Verify user A cannot delete or view user B's history records.
+[SEC-06] Verify summary heading selection only updates summaries owned by the authenticated user.
+
+7. END-TO-END / INTEGRATION SCENARIOS
+------------------------------------
+
+[E2E-01] Happy path: register/login, upload a valid PDF, receive a summary, view history, and download the summary.
+[E2E-02] Return path: login, upload PDF, refresh page, verify authentication persists, navigate to history, and confirm the summary is present.
+[E2E-03] Error path: upload invalid PDF type and verify the UI shows an appropriate rejection message.
+[E2E-04] Error path: simulate backend service failure during summarization and verify the UI displays a friendly error.
+[E2E-05] History delete path: upload PDF, view history, delete the item, refresh, and verify it is removed.
+[E2E-06] Token expiry path: log in with an expired or revoked token, try to fetch history or upload PDF, and verify the app redirects to login.
+[E2E-07] Page range path: upload a multi-page PDF with startPage and endPage values, verify the returned summary covers only those pages.
+[E2E-08] Heading selection flow: upload PDF, receive headings list, select a heading, and verify backend and UI update accordingly.
+
+8. PERFORMANCE / LIMITS
+----------------------
+
+[PERF-01] Verify the app can upload and process a small PDF quickly.
+[PERF-02] Verify the system remains stable while uploading several valid PDFs in sequence.
+[PERF-03] Verify the backend handles large PDF files without throwing out-of-memory errors.
+[PERF-04] Verify request timeouts or service delays fail gracefully to the user.
+
+9. COMPATIBILITY / BROWSER SUPPORT
+----------------------------------
+
+[COMP-01] Verify file upload works in supported browsers (Chrome, Firefox, Edge).
+[COMP-02] Verify clipboard copy works in browsers that support navigator.clipboard.
+[COMP-03] Verify the app does not break when JavaScript is disabled in a graceful way (at minimum no blank page).
+
+10. DOCUMENTATION / MISC
+------------------------
+
+[DOC-01] Verify error messages returned from the API are descriptive and actionable.
+[DOC-02] Verify frontend help text describes the file requirements and limitations clearly.
+[DOC-03] Verify the summary download filename includes the original PDF filename when available.
+
+Notes:
+- Some test cases depend on implementing missing features such as heading selection, page-range filtering, and OCR support.
+- If the app is built without authentication, remove token-based cases and use only public upload/history cases.

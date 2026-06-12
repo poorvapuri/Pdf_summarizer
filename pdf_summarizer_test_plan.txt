@@ -1,0 +1,68 @@
+====================================================================
+           TEST PLAN & TEST CASES FOR PDF SUMMARIZER
+====================================================================
+
+This document outlines all the test cases that need to be implemented
+for the PDF Summarizer application, covering Frontend, Backend, and 
+End-to-End (E2E) integration.
+
+--------------------------------------------------------------------
+1. FRONTEND TEST CASES (React / UI)
+--------------------------------------------------------------------
+Component: UploadPDF.jsx & Related UI
+
+[UI-01] Verify the Upload button is visible and clickable.
+[UI-02] Verify drag-and-drop functionality works for PDF files.
+[UI-03] Verify that only .pdf file extensions are accepted (reject .docx, .txt, .jpg, etc.).
+[UI-04] Verify an error message is displayed when attempting to upload a file exceeding the maximum size limit (e.g., > 10MB).
+[UI-05] Verify an error message is displayed when attempting to upload an empty/corrupt PDF.
+[UI-06] Verify a loading spinner or progress bar is displayed while the file is uploading and being summarized.
+[UI-07] Verify the UI updates to show the generated summary once the backend responds successfully.
+[UI-08] Verify error handling in the UI if the backend request fails (e.g., "500 Internal Server Error" or "Network Error").
+[UI-09] Verify the user can cancel an ongoing upload (if the feature exists).
+[UI-10] Verify the generated summary text can be copied to the clipboard.
+[UI-11] Verify the UI is responsive and renders correctly on mobile, tablet, and desktop viewports.
+
+--------------------------------------------------------------------
+2. BACKEND TEST CASES (Node.js/Express API)
+--------------------------------------------------------------------
+Module: File Upload & Summarization APIs
+
+[API-01] Verify the POST /api/upload endpoint successfully receives a valid PDF file and returns a 200 OK.
+[API-02] Verify the POST /api/upload endpoint rejects non-PDF files with a 400 Bad Request.
+[API-03] Verify the POST /api/upload endpoint enforces file size limits and returns a 413 Payload Too Large if exceeded.
+[API-04] Verify the text extraction logic successfully extracts text from a standard, text-based PDF.
+[API-05] Verify the text extraction logic handles scanned PDFs gracefully (either returning an error or using OCR if implemented).
+[API-06] Verify the API handles extremely large PDFs (many pages) without crashing out of memory.
+[API-07] Verify the summarization AI endpoint is called correctly with the extracted text.
+[API-08] Verify the API handles timeouts or failures from the AI summarization service and returns a meaningful 502/504 error to the client.
+[API-09] Verify that generated summaries are successfully saved to the database (if history tracking is implemented).
+[API-10] Verify rate limiting is enforced on the summarization API to prevent abuse.
+
+--------------------------------------------------------------------
+3. DATABASE & HISTORY TEST CASES (MongoDB / SQL)
+--------------------------------------------------------------------
+Module: User History & Saved Summaries
+
+[DB-01] Verify a new document/record is created when a summary is generated.
+[DB-02] Verify the GET /api/history endpoint returns a list of previously summarized PDFs for the authenticated user.
+[DB-03] Verify pagination works correctly on the history endpoint.
+[DB-04] Verify the user can delete a saved summary and it is removed from the database.
+
+--------------------------------------------------------------------
+4. AUTHENTICATION & AUTHORIZATION (If Applicable)
+--------------------------------------------------------------------
+Module: Login, Registration, JWT
+
+[AUTH-01] Verify unauthenticated users cannot access the summarization endpoint (returns 401 Unauthorized).
+[AUTH-02] Verify token expiration is handled correctly and prompts the user to re-login.
+[AUTH-03] Verify users can only view and delete their own generated summaries, not others' (Access Control).
+
+--------------------------------------------------------------------
+5. END-TO-END (E2E) INTEGRATION TEST CASES
+--------------------------------------------------------------------
+Module: Full User Journey (e.g., using Selenium, Cypress, or Playwright)
+
+[E2E-01] Happy Path: User navigates to the app, uploads a valid 2-page PDF, waits for processing, and successfully reads the summary.
+[E2E-02] History Path: User uploads a PDF, views the summary, refreshes the page, navigates to "History", and verifies the previous summary is listed.
+[E2E-03] AI Failure Path: Mock the AI service to return an error, upload a valid PDF, and verify the frontend displays a user-friendly error message stating the summarization service is temporarily unavailable.

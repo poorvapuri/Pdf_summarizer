@@ -1,0 +1,277 @@
+TestNG - Comprehensive Test Case Guide and Examples
+===================================================
+
+This document covers all major annotations, attributes, and test case scenarios possible with TestNG.
+
+---------------------------------------------------
+1. Basic Annotations (Setup and Teardown)
+---------------------------------------------------
+TestNG provides hierarchical setup and teardown methods.
+
+import org.testng.annotations.*;
+
+public class BaseTest {
+    @BeforeSuite
+    public void beforeSuite() { /* Runs once before all tests in the suite */ }
+
+    @AfterSuite
+    public void afterSuite() { /* Runs once after all tests in the suite */ }
+
+    @BeforeTest
+    public void beforeTest() { /* Runs before any test method belonging to the classes inside the <test> tag */ }
+
+    @AfterTest
+    public void afterTest() { /* Runs after all test methods belonging to the classes inside the <test> tag */ }
+
+    @BeforeClass
+    public void beforeClass() { /* Runs before the first test method in the current class */ }
+
+    @AfterClass
+    public void afterClass() { /* Runs after all the test methods in the current class */ }
+
+    @BeforeMethod
+    public void beforeMethod() { /* Runs before each @Test method */ }
+
+    @AfterMethod
+    public void afterMethod() { /* Runs after each @Test method */ }
+}
+
+---------------------------------------------------
+2. Basic @Test and Assertions
+---------------------------------------------------
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
+public class AssertionTests {
+    @Test
+    public void hardAssertTest() {
+        Assert.assertEquals(5, 5, "Numbers do not match");
+        Assert.assertTrue(true, "Condition is false");
+        Assert.assertFalse(false, "Condition is true");
+        Assert.assertNotNull(new Object(), "Object is null");
+    }
+}
+
+---------------------------------------------------
+3. Soft Assertions
+---------------------------------------------------
+Soft assertions collect all errors and report them at the end without halting the test immediately.
+
+import org.testng.asserts.SoftAssert;
+import org.testng.annotations.Test;
+
+public class SoftAssertionTests {
+    @Test
+    public void softAssertTest() {
+        SoftAssert softAssert = new SoftAssert();
+        softAssert.assertEquals(5, 6, "First failure");
+        softAssert.assertTrue(false, "Second failure");
+        // Must call assertAll() at the end to report failures
+        softAssert.assertAll(); 
+    }
+}
+
+---------------------------------------------------
+4. Test Priorities
+---------------------------------------------------
+Tests execute in alphabetical order by default. Use priority to order them (lower number executes first).
+
+public class PriorityTests {
+    @Test(priority = 1)
+    public void loginTest() {}
+
+    @Test(priority = 2)
+    public void dashboardTest() {}
+
+    @Test(priority = 3)
+    public void logoutTest() {}
+}
+
+---------------------------------------------------
+5. Disabling / Ignoring Tests
+---------------------------------------------------
+public class IgnoreTests {
+    @Test(enabled = false)
+    public void incompleteTest() {
+        // This test will be skipped
+    }
+}
+
+---------------------------------------------------
+6. Dependencies (dependsOnMethods, dependsOnGroups)
+---------------------------------------------------
+If a dependent method fails, the methods depending on it are skipped (not marked as failed).
+
+public class DependencyTests {
+    @Test
+    public void login() { Assert.assertTrue(true); }
+
+    @Test(dependsOnMethods = {"login"})
+    public void checkProfile() { /* Runs only if login() passes */ }
+
+    @Test(groups = {"init"})
+    public void serverStart() {}
+
+    @Test(dependsOnGroups = {"init"})
+    public void testDatabase() {}
+}
+
+---------------------------------------------------
+7. Grouping Tests
+---------------------------------------------------
+Allows executing subsets of tests defined in testng.xml.
+
+public class GroupTests {
+    @Test(groups = {"smoke", "regression"})
+    public void loginTest() {}
+
+    @Test(groups = {"regression"})
+    public void deepVerificationTest() {}
+}
+
+---------------------------------------------------
+8. Data Providers (Data-Driven Testing)
+---------------------------------------------------
+Run the same test multiple times with different datasets.
+
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+
+public class DataProviderTests {
+    @DataProvider(name = "loginData")
+    public Object[][] getData() {
+        return new Object[][] {
+            {"user1", "pass1"},
+            {"user2", "pass2"}
+        };
+    }
+
+    @Test(dataProvider = "loginData")
+    public void loginTest(String username, String password) {
+        System.out.println("Logging in: " + username + " / " + password);
+    }
+}
+
+---------------------------------------------------
+9. Parameters (from testng.xml)
+---------------------------------------------------
+Pass values from the suite XML file into the test methods.
+
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
+
+public class ParameterTests {
+    @Test
+    @Parameters({"browser", "url"})
+    public void openBrowser(String browser, String url) {
+        System.out.println("Browser: " + browser + ", URL: " + url);
+    }
+}
+
+---------------------------------------------------
+10. Expected Exceptions
+---------------------------------------------------
+Verify that a specific exception is thrown.
+
+public class ExceptionTests {
+    @Test(expectedExceptions = ArithmeticException.class)
+    public void divideByZero() {
+        int x = 10 / 0;
+    }
+}
+
+---------------------------------------------------
+11. Timeouts
+---------------------------------------------------
+Fail a test if it takes longer than the specified milliseconds.
+
+public class TimeoutTests {
+    @Test(timeOut = 5000) // 5 seconds
+    public void longRunningTest() throws InterruptedException {
+        Thread.sleep(6000); // This test will fail
+    }
+}
+
+---------------------------------------------------
+12. Invocation Count and Thread Pool Size (Load Testing)
+---------------------------------------------------
+Execute a test multiple times concurrently.
+
+public class InvocationTests {
+    @Test(invocationCount = 10, threadPoolSize = 3)
+    public void loadTest() {
+        System.out.println("Running on thread: " + Thread.currentThread().getId());
+    }
+}
+
+---------------------------------------------------
+13. Listeners (ITestListener)
+---------------------------------------------------
+Execute code on specific test events (start, success, failure, skip).
+
+import org.testng.ITestListener;
+import org.testng.ITestResult;
+
+public class CustomListener implements ITestListener {
+    @Override
+    public void onTestFailure(ITestResult result) {
+        System.out.println("Test Failed: " + result.getName());
+        // Capture screenshot logic here
+    }
+}
+
+// Applying the listener to a class
+@Listeners(CustomListener.class)
+public class ListenerTests {
+    @Test
+    public void testMethod() { Assert.assertTrue(false); }
+}
+
+---------------------------------------------------
+14. Factory
+---------------------------------------------------
+Dynamically create tests at runtime by returning an array of object instances.
+
+import org.testng.annotations.Factory;
+
+public class TestFactory {
+    @Factory
+    public Object[] createInstances() {
+        return new Object[] {
+            new DataProviderTests(),
+            new PriorityTests()
+        };
+    }
+}
+
+---------------------------------------------------
+15. Output Reports
+---------------------------------------------------
+TestNG automatically generates reports after test execution. By default, these are saved in the "test-output" directory at the root of the project.
+
+a. Emailable Report (emailable-report.html)
+-------------------------------------------
+- Location: test-output/emailable-report.html
+- Description: A lightweight, concise HTML report designed to be embedded or attached in emails.
+- Content: Highlights passed, failed, and skipped tests along with their execution times. It also includes stack traces for failures and shows any parameters that were passed to the test methods.
+
+b. Index Report (index.html)
+-------------------------------------------
+- Location: test-output/index.html
+- Description: The comprehensive, detailed default HTML report provided by TestNG.
+- Content: Provides a navigable left-hand menu that links to:
+  - Suites and tests executed
+  - Groups included/excluded
+  - Chronological execution order of methods
+  - Test execution times
+  - Reporter output (messages logged using org.testng.Reporter.log("..."))
+  - Ignored methods
+
+c. XSLT Report
+-------------------------------------------
+- Location: Requires custom generation (usually outputs to a custom folder like "testng-xslt").
+- Description: TestNG generates raw XML data (testng-results.xml). XSLT (Extensible Stylesheet Language Transformations) is used to convert this XML into a visually appealing, interactive HTML report with charts.
+- Usage: 
+  1. Ensure TestNG outputs the default XML reports.
+  2. Use an XSLT stylesheet (such as testng-results.xsl) which defines the layout and styling.
+  3. Use a build tool like Ant (via an xslt task) or Maven (via plugins like maven-antrun-plugin) to process the XML against the XSLT and generate the final HTML report.
