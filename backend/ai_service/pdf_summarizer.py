@@ -106,17 +106,17 @@ def extract_text_pdf(path: str) -> str:
 #     return text
 
 def extract_text(path: str, start_page=None, end_page=None) -> str:
-    print("Trying slate", flush=True)
+    # print("Trying slate", flush=True)
 
     text = extract_text_pdf(path)
 
-    print("Text length:", len(text), flush=True)
+    # print("Text length:", len(text), flush=True)
 
     if start_page or end_page or len(text.strip()) < 50:
-        print("Using OCR", flush=True)
+        # print("Using OCR", flush=True)
         text = extract_text_ocr(path, start_page, end_page)
 
-    print("Extraction complete", flush=True)
+    # print("Extraction complete", flush=True)
 
     return text
 

@@ -418,20 +418,45 @@ module.exports = (filePath, mode = "medium", startPage = null, endPage = null) =
       reject(`Failed to start Python process: ${error.message}`);
     });
 
+    // py.on("close", (code) => {
+    //   if (err) {
+    //     console.error("🐍 Python stderr:", err);
+    //   }
+
+    //   if (!out.trim()) {
+    //     return reject(err || `Python exited with code ${code}`);
+    //   }
+
+    //   try {
+    //     resolve(JSON.parse(out));
+    //   } catch (e) {
+    //     console.error("🐍 Raw Python output:", out);
+    //     reject(err || "Invalid JSON from Python");
+    //   }
+    // });
+
     py.on("close", (code) => {
-      if (err) {
-        console.error("🐍 Python stderr:", err);
-      }
+  if (err) {
+    console.error("🐍 Python stderr:", err);
+  }
 
-      if (!out.trim()) {
-        return reject(err || `Python exited with code ${code}`);
-      }
+  if (!out.trim()) {
+    return reject(err || `Python exited with code ${code}`);
+  }
 
-      try {
-        resolve(JSON.parse(out));
-      } catch (e) {
-        console.error("🐍 Raw Python output:", out);
-        reject(err || "Invalid JSON from Python");
-      }
-    });
+  try {
+    // Find the JSON object even if stdout has debug text
+    const start = out.indexOf("{");
+    if (start === -1) {
+      throw new Error("No JSON found in Python output");
+    }
+
+    const json = out.slice(start);
+    resolve(JSON.parse(json));
+
+  } catch (e) {
+    console.error("🐍 Raw Python output:", out);
+    reject("Invalid JSON from Python");
+  }
+});
   });
