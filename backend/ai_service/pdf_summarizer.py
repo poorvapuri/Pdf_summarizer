@@ -85,8 +85,68 @@ def extract_text_pdf(path: str) -> str:
     try:
         with open(path, "rb") as f:
             return " ".join(slate.PDF(f))
-    except Exception:
+    except Exception as e:
+        print("SLATE ERROR:", str(e), flush=True)
         return ""
+
+
+# def extract_text(path, start_page=None, end_page=None):
+#     print("Starting PDF extraction", flush=True)
+
+#     text = extract_text_pdf(path)
+#     print(f"PDF text length: {len(text)}", flush=True)
+
+#     if start_page or end_page or len(text.strip()) < 50:
+#         print("Falling back to OCR", flush=True)
+#         text = extract_text_ocr(path, start_page, end_page)
+
+#     print("Extraction finished", flush=True)
+#     return text
+
+def extract_text(path: str, start_page=None, end_page=None) -> str:
+    print("Trying slate", flush=True)
+
+    text = extract_text_pdf(path)
+
+    print("Text length:", len(text), flush=True)
+
+    if start_page or end_page or len(text.strip()) < 50:
+        print("Using OCR", flush=True)
+        text = extract_text_ocr(path, start_page, end_page)
+
+    print("Extraction complete", flush=True)
+
+    return text
+
+# def extract_text_ocr(path: str, start_page=None, end_page=None) -> str:
+
+#     print("Calling convert_from_path", flush=True)
+
+#     pages = convert_from_path(
+#     path,
+#     first_page=start_page,
+#     last_page=end_page
+# )
+
+#     print("convert_from_path done", flush=True)
+
+#     print("Starting pytesseract", flush=True)
+
+#     text = " ".join(pytesseract.image_to_string(p) for p in pages)
+
+#     print("pytesseract done", flush=True)
+#     if convert_from_path is None or pytesseract is None:
+#         return ""
+
+#     try:
+#         pages = convert_from_path(
+#             path,
+#             first_page=start_page,
+#             last_page=end_page
+#         )
+#         return " ".join(pytesseract.image_to_string(p) for p in pages)
+#     except Exception:
+#         return ""
 
 
 def extract_text_ocr(path: str, start_page=None, end_page=None) -> str:
@@ -94,24 +154,36 @@ def extract_text_ocr(path: str, start_page=None, end_page=None) -> str:
         return ""
 
     try:
+        print("Calling convert_from_path()", flush=True)
+
         pages = convert_from_path(
             path,
             first_page=start_page,
             last_page=end_page
         )
-        return " ".join(pytesseract.image_to_string(p) for p in pages)
-    except Exception:
+
+        print("convert_from_path finished", flush=True)
+
+        print("Starting pytesseract", flush=True)
+
+        text = " ".join(pytesseract.image_to_string(p) for p in pages)
+
+        print("pytesseract finished", flush=True)
+
+        return text
+
+    except Exception as e:
+        print("OCR ERROR:", str(e), flush=True)
         return ""
 
+# def extract_text(path: str, start_page=None, end_page=None) -> str:
+#     text = extract_text_pdf(path)
 
-def extract_text(path: str, start_page=None, end_page=None) -> str:
-    text = extract_text_pdf(path)
+#     # If page range is provided or text is weak → OCR
+#     if start_page or end_page or len(text.strip()) < 50:
+#         text = extract_text_ocr(path, start_page, end_page)
 
-    # If page range is provided or text is weak → OCR
-    if start_page or end_page or len(text.strip()) < 50:
-        text = extract_text_ocr(path, start_page, end_page)
-
-    return text
+#     return text
 
 
 # ─── TEXT CLEANING ────────────────────────────────────────────────────
