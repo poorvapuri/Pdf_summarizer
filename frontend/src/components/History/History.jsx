@@ -605,6 +605,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getHistory, deleteHistory } from '../../services/historyService';
+import speechService from '../../services/speechService';
 
 function History() {
   const navigate = useNavigate();
@@ -612,6 +613,102 @@ function History() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(null);
   const [expandedIds, setExpandedIds] = useState([]);
+
+  // --- Speech Synthesis State & Callbacks ---
+  const [speakingId, setSpeakingId] = useState(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const [voices, setVoices] = useState([]);
+  const [selectedVoiceName, setSelectedVoiceName] = useState('');
+  const [speechRate, setSpeechRate] = useState(1.0);
+
+  useEffect(() => {
+    if (speechService.isSupported()) {
+      speechService.getVoices().then((availableVoices) => {
+        setVoices(availableVoices);
+        const defaultVoice = availableVoices.find(v => v.name.includes('Google') && v.lang.startsWith('en')) ||
+                             availableVoices.find(v => v.lang.startsWith('en')) ||
+                             availableVoices[0];
+        if (defaultVoice) {
+          setSelectedVoiceName(defaultVoice.name);
+        }
+      });
+    }
+    return () => {
+      speechService.stop();
+    };
+  }, []);
+
+  const handlePlayPauseSpeech = (item) => {
+    if (!speechService.isSupported()) return;
+
+    if (speakingId === item._id) {
+      if (isPaused) {
+        speechService.resume();
+        setIsPaused(false);
+      } else {
+        speechService.pause();
+        setIsPaused(true);
+      }
+    } else {
+      setSpeakingId(item._id);
+      setIsPaused(false);
+      speechService.speak(item.summary, {
+        voiceName: selectedVoiceName,
+        rate: speechRate,
+        onEnd: () => {
+          setSpeakingId(null);
+          setIsPaused(false);
+        },
+        onError: () => {
+          setSpeakingId(null);
+          setIsPaused(false);
+        }
+      });
+    }
+  };
+
+  const handleStopSpeech = () => {
+    speechService.stop();
+    setSpeakingId(null);
+    setIsPaused(false);
+  };
+
+  const handleVoiceChange = (voiceName, currentItem) => {
+    setSelectedVoiceName(voiceName);
+    if (speakingId === currentItem._id && !isPaused) {
+      speechService.speak(currentItem.summary, {
+        voiceName: voiceName,
+        rate: speechRate,
+        onEnd: () => {
+          setSpeakingId(null);
+          setIsPaused(false);
+        },
+        onError: () => {
+          setSpeakingId(null);
+          setIsPaused(false);
+        }
+      });
+    }
+  };
+
+  const handleRateChange = (rate, currentItem) => {
+    setSpeechRate(rate);
+    if (speakingId === currentItem._id && !isPaused) {
+      speechService.speak(currentItem.summary, {
+        voiceName: selectedVoiceName,
+        rate: rate,
+        onEnd: () => {
+          setSpeakingId(null);
+          setIsPaused(false);
+        },
+        onError: () => {
+          setSpeakingId(null);
+          setIsPaused(false);
+        }
+      });
+    }
+  };
+  // ------------------------------------------
 
   useEffect(() => {
     fetchHistory();
@@ -661,6 +758,10 @@ function History() {
   };
 
   const toggleExpand = (id) => {
+    const isExpanding = !expandedIds.includes(id);
+    if (!isExpanding && speakingId === id) {
+      handleStopSpeech();
+    }
     setExpandedIds(prev => 
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
@@ -710,6 +811,15 @@ function History() {
                   </div>
                 </div>
                 <div className="history-btns">
+                  {speechService.isSupported() && (
+                    <button
+                      className={`btn-icon ${speakingId === item._id && !isPaused ? 'speaking' : ''}`}
+                      onClick={() => handlePlayPauseSpeech(item)}
+                      title={speakingId === item._id && !isPaused ? 'Pause' : 'Play Summary'}
+                    >
+                      {speakingId === item._id && !isPaused ? '⏸️' : '🔊'}
+                    </button>
+                  )}
                   <button
                     className="btn-icon"
                     onClick={() => handleDownload(item)}
@@ -749,6 +859,61 @@ function History() {
                   >
                     {expandedIds.includes(item._id) ? 'Show Less' : 'Read More'}
                   </button>
+                )}
+
+                {expandedIds.includes(item._id) && speechService.isSupported() && (
+                  <div className="speech-player compact" style={{ marginTop: '1rem' }}>
+                    <div className="speech-controls-main">
+                      <button 
+                        onClick={() => handlePlayPauseSpeech(item)} 
+                        className={`btn-speech-play ${speakingId === item._id && !isPaused ? 'speaking' : ''}`}
+                        title={speakingId === item._id && !isPaused ? 'Pause' : 'Play summary'}
+                      >
+                        {speakingId === item._id && !isPaused ? '⏸️ Pause' : '🔊 Play'}
+                      </button>
+                      
+                      <button 
+                        onClick={handleStopSpeech} 
+                        className="btn-speech-stop" 
+                        disabled={speakingId !== item._id}
+                        title="Stop"
+                      >
+                        ⏹️ Stop
+                      </button>
+                    </div>
+
+                    <div className="speech-settings">
+                      <div className="speech-setting-item">
+                        <label htmlFor={`voice-select-${item._id}`}>Voice:</label>
+                        <select 
+                          id={`voice-select-${item._id}`}
+                          value={selectedVoiceName} 
+                          onChange={(e) => handleVoiceChange(e.target.value, item)}
+                          className="speech-select"
+                        >
+                          {voices.map((voice) => (
+                            <option key={voice.name} value={voice.name}>
+                              {voice.name} ({voice.lang})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="speech-setting-item">
+                        <label htmlFor={`speed-slider-${item._id}`}>Speed: {speechRate.toFixed(1)}x</label>
+                        <input 
+                          id={`speed-slider-${item._id}`}
+                          type="range" 
+                          min="0.5" 
+                          max="2.0" 
+                          step="0.1" 
+                          value={speechRate} 
+                          onChange={(e) => handleRateChange(parseFloat(e.target.value), item)}
+                          className="speech-slider"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

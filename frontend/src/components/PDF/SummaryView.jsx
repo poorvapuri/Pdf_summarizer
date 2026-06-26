@@ -194,10 +194,120 @@
 
 // export default SummaryView;
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import speechService from '../../services/speechService';
 
 function SummaryView({ summary, onDownload, onCopy, onReset }) {
-  if (!summary) return null;
+  const [voices, setVoices] = useState([]);
+  const [selectedVoiceName, setSelectedVoiceName] = useState('');
+  const [speechRate, setSpeechRate] = useState(1.0);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const summaryText = typeof summary === 'string'
+    ? summary
+    : summary?.summary || summary?.content || summary?.text || '';
+
+  useEffect(() => {
+    if (speechService.isSupported()) {
+      speechService.getVoices().then((availableVoices) => {
+        setVoices(availableVoices);
+        const defaultVoice = availableVoices.find((voice) => voice.name.includes('Google') && voice.lang.startsWith('en'))
+          || availableVoices.find((voice) => voice.lang.startsWith('en'))
+          || availableVoices[0];
+        if (defaultVoice) {
+          setSelectedVoiceName(defaultVoice.name);
+        }
+      });
+    }
+
+    return () => {
+      speechService.stop();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!summaryText) {
+      speechService.stop();
+      setIsSpeaking(false);
+      setIsPaused(false);
+    }
+  }, [summaryText]);
+
+  if (!summaryText) return null;
+
+  const handlePlayPauseSpeech = () => {
+    if (!speechService.isSupported()) return;
+
+    if (isSpeaking) {
+      if (isPaused) {
+        speechService.resume();
+        setIsPaused(false);
+      } else {
+        speechService.pause();
+        setIsPaused(true);
+      }
+    } else {
+      setIsSpeaking(true);
+      setIsPaused(false);
+      speechService.speak(summaryText, {
+        voiceName: selectedVoiceName,
+        rate: speechRate,
+        onEnd: () => {
+          setIsSpeaking(false);
+          setIsPaused(false);
+        },
+        onError: () => {
+          setIsSpeaking(false);
+          setIsPaused(false);
+        }
+      });
+    }
+  };
+
+  const handleStopSpeech = () => {
+    speechService.stop();
+    setIsSpeaking(false);
+    setIsPaused(false);
+  };
+
+  const handleVoiceChange = (event) => {
+    const voiceName = event.target.value;
+    setSelectedVoiceName(voiceName);
+    if (isSpeaking && !isPaused) {
+      speechService.speak(summaryText, {
+        voiceName,
+        rate: speechRate,
+        onEnd: () => {
+          setIsSpeaking(false);
+          setIsPaused(false);
+        },
+        onError: () => {
+          setIsSpeaking(false);
+          setIsPaused(false);
+        }
+      });
+    }
+  };
+
+  const handleRateChange = (event) => {
+    const rate = parseFloat(event.target.value);
+    setSpeechRate(rate);
+    if (isSpeaking && !isPaused) {
+      speechService.speak(summaryText, {
+        voiceName: selectedVoiceName,
+        rate,
+        onEnd: () => {
+          setIsSpeaking(false);
+          setIsPaused(false);
+        },
+        onError: () => {
+          setIsSpeaking(false);
+          setIsPaused(false);
+        }
+      });
+    }
+  };
 
   return (
     <div className="summary-box">
@@ -205,7 +315,62 @@ function SummaryView({ summary, onDownload, onCopy, onReset }) {
         <h3>✨ Summary Generated</h3>
         <span className="summary-badge">Complete</span>
       </div>
-      <div className="summary-content">{summary}</div>
+      <div className="summary-content">{summaryText}</div>
+
+      {speechService.isSupported() && (
+        <div className="speech-player compact">
+          <div className="speech-controls-main">
+            <button
+              onClick={handlePlayPauseSpeech}
+              className={`btn-speech-play ${isSpeaking && !isPaused ? 'speaking' : ''}`}
+              title={isSpeaking && !isPaused ? 'Pause' : 'Play summary'}
+            >
+              {isSpeaking && !isPaused ? '⏸️ Pause' : '🔊 Play Summary'}
+            </button>
+            <button
+              onClick={handleStopSpeech}
+              className="btn-speech-stop"
+              disabled={!isSpeaking}
+              title="Stop"
+            >
+              ⏹️ Stop
+            </button>
+          </div>
+
+          <div className="speech-settings">
+            <div className="speech-setting-item">
+              <label htmlFor="summary-voice-select">Voice:</label>
+              <select
+                id="summary-voice-select"
+                value={selectedVoiceName}
+                onChange={handleVoiceChange}
+                className="speech-select"
+              >
+                {voices.map((voice) => (
+                  <option key={voice.name} value={voice.name}>
+                    {voice.name} ({voice.lang})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="speech-setting-item">
+              <label htmlFor="summary-speed-slider">Speed: {speechRate.toFixed(1)}x</label>
+              <input
+                id="summary-speed-slider"
+                type="range"
+                min="0.5"
+                max="2.0"
+                step="0.1"
+                value={speechRate}
+                onChange={handleRateChange}
+                className="speech-slider"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="actions">
         <button onClick={onDownload} className="btn-secondary">
           📥 Download

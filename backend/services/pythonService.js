@@ -382,7 +382,7 @@ if (!PYTHON_PATH) throw new Error("PYTHON_PATH not set");
 
 const SCRIPT_PATH = path.resolve(
   __dirname,
-  "../../ai_service/pdf_summarizer.py"
+  "../ai_service/pdf_summarizer.py"
 );
 
 /**

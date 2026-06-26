@@ -1357,9 +1357,10 @@
 
 
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { uploadPDF } from '../../services/pdfService';
 import * as pdfjsLib from 'pdfjs-dist';
+import speechService from '../../services/speechService';
 import './UploadPDF.css';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -1383,6 +1384,109 @@ function UploadPDF() {
   const [endPage, setEndPage] = useState('');
 
   const inputRef = useRef(null);
+
+  // --- Speech Synthesis State & Callbacks ---
+  const [voices, setVoices] = useState([]);
+  const [selectedVoiceName, setSelectedVoiceName] = useState('');
+  const [speechRate, setSpeechRate] = useState(1.0);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (speechService.isSupported()) {
+      speechService.getVoices().then((availableVoices) => {
+        setVoices(availableVoices);
+        const defaultVoice = availableVoices.find(v => v.name.includes('Google') && v.lang.startsWith('en')) ||
+                             availableVoices.find(v => v.lang.startsWith('en')) ||
+                             availableVoices[0];
+        if (defaultVoice) {
+          setSelectedVoiceName(defaultVoice.name);
+        }
+      });
+    }
+    return () => {
+      speechService.stop();
+    };
+  }, []);
+
+  // Stop speech if summary or active heading changes
+  useEffect(() => {
+    handleStopSpeech();
+  }, [summary, selectedHeading]);
+
+  const handlePlayPauseSpeech = () => {
+    if (!speechService.isSupported()) return;
+
+    if (isSpeaking) {
+      if (isPaused) {
+        speechService.resume();
+        setIsPaused(false);
+      } else {
+        speechService.pause();
+        setIsPaused(true);
+      }
+    } else {
+      setIsSpeaking(true);
+      setIsPaused(false);
+      speechService.speak(summary, {
+        voiceName: selectedVoiceName,
+        rate: speechRate,
+        onEnd: () => {
+          setIsSpeaking(false);
+          setIsPaused(false);
+        },
+        onError: () => {
+          setIsSpeaking(false);
+          setIsPaused(false);
+        }
+      });
+    }
+  };
+
+  const handleStopSpeech = () => {
+    speechService.stop();
+    setIsSpeaking(false);
+    setIsPaused(false);
+  };
+
+  const handleVoiceChange = (e) => {
+    const voiceName = e.target.value;
+    setSelectedVoiceName(voiceName);
+    if (isSpeaking && !isPaused) {
+      speechService.speak(summary, {
+        voiceName: voiceName,
+        rate: speechRate,
+        onEnd: () => {
+          setIsSpeaking(false);
+          setIsPaused(false);
+        },
+        onError: () => {
+          setIsSpeaking(false);
+          setIsPaused(false);
+        }
+      });
+    }
+  };
+
+  const handleRateChange = (e) => {
+    const rate = parseFloat(e.target.value);
+    setSpeechRate(rate);
+    if (isSpeaking && !isPaused) {
+      speechService.speak(summary, {
+        voiceName: selectedVoiceName,
+        rate: rate,
+        onEnd: () => {
+          setIsSpeaking(false);
+          setIsPaused(false);
+        },
+        onError: () => {
+          setIsSpeaking(false);
+          setIsPaused(false);
+        }
+      });
+    }
+  };
+  // ------------------------------------------
 
   const handleFile = (selectedFile) => {
     setError('');
@@ -1672,6 +1776,61 @@ function UploadPDF() {
             {selectedHeading && <h2 style={{ marginBottom: '16px' }}>{selectedHeading}</h2>}
             {summary}
           </div>
+
+          {speechService.isSupported() && (
+            <div className="speech-player">
+              <div className="speech-controls-main">
+                <button 
+                  onClick={handlePlayPauseSpeech} 
+                  className={`btn-speech-play ${isSpeaking && !isPaused ? 'speaking' : ''}`}
+                  title={isSpeaking && !isPaused ? 'Pause' : 'Play summary'}
+                >
+                  {isSpeaking && !isPaused ? '⏸️ Pause' : '🔊 Play Summary'}
+                </button>
+                
+                <button 
+                  onClick={handleStopSpeech} 
+                  className="btn-speech-stop" 
+                  disabled={!isSpeaking}
+                  title="Stop"
+                >
+                  ⏹️ Stop
+                </button>
+              </div>
+
+              <div className="speech-settings">
+                <div className="speech-setting-item">
+                  <label htmlFor="voice-select">Voice:</label>
+                  <select 
+                    id="voice-select"
+                    value={selectedVoiceName} 
+                    onChange={handleVoiceChange}
+                    className="speech-select"
+                  >
+                    {voices.map((voice) => (
+                      <option key={voice.name} value={voice.name}>
+                        {voice.name} ({voice.lang})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="speech-setting-item">
+                  <label htmlFor="speed-slider">Speed: {speechRate.toFixed(1)}x</label>
+                  <input 
+                    id="speed-slider"
+                    type="range" 
+                    min="0.5" 
+                    max="2.0" 
+                    step="0.1" 
+                    value={speechRate} 
+                    onChange={handleRateChange}
+                    className="speech-slider"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="summary-actions">
             <button onClick={downloadSummary} className="btn-secondary">
