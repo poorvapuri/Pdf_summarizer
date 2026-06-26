@@ -10,12 +10,14 @@ os.makedirs(NLTK_DIR, exist_ok=True)
 
 nltk.data.path.append(NLTK_DIR)
 
-for pkg in ["stopwords", "punkt"]:
+for pkg in ["stopwords", "punkt", "punkt_tab"]:
     try:
         if pkg == "stopwords":
             nltk.data.find("corpora/stopwords")
-        else:
+        elif pkg == "punkt":
             nltk.data.find("tokenizers/punkt")
+        else:
+            nltk.data.find("tokenizers/punkt_tab")
     except LookupError:
         nltk.download(pkg, download_dir=NLTK_DIR)
 
